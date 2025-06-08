@@ -1,0 +1,11 @@
+[phases.setup]
+nixPkgs = ["nodejs_18"]
+
+[phases.install]
+cmd = "npm ci"
+
+[phases.build]
+cmd = "DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy npm run build"
+
+[start]
+cmd = "npm start"
