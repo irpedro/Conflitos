@@ -2,10 +2,13 @@
 nixPkgs = ["nodejs_18"]
 
 [phases.install]
-cmd = "npm ci"
+cmd = "npm install"
 
 [phases.build]
-cmd = "DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy npm run build"
+cmd = "DATABASE_URL=postgresql://dummy:dummy@dummy:5432/dummy NODE_ENV=production npm run build"
 
 [start]
 cmd = "npm start"
+
+[variables]
+NODE_ENV = "production"
