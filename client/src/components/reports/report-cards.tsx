@@ -142,7 +142,7 @@ export default function ReportCards() {
         <Card className="fade-in">
           <CardHeader>
             <CardTitle>Relatório 5: Tráfico de Armas</CardTitle>
-            <p className="text-sm text-slate-500">Nomes</p>
+            <p className="text-sm text-slate-500">Traficantes que fornecem Barret M82 ou M200 Intervention</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
