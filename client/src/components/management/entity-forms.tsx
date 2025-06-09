@@ -1,3 +1,178 @@
+import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import { Plus, Users, Shield, Crown, Star, Loader2, Layers } from "lucide-react";
+import { api } from "@/lib/api";
+import { useToast } from "@/hooks/use-toast";
+// Define tipos locais para resolver problemas de importação
+type GrupoArmado = {
+  id: number;
+  nome: string;
+  numeroBaixas: number;
+};
+
+type LiderPolitico = {
+  nome: string;
+  idGrupoArmado: number;
+  apoio: string;
+};
+
+type Divisao = {
+  numeroDivisao: number;
+  idGrupoArmado: number;
+  numeroBarcos: number;
+  numeroTanques: number;
+  numeroAvioes: number;
+  numeroHomens: number;
+  numeroBaixas: number;
+};
+
+export default function EntityForms() {
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+  
+  // Form states
+  const [conflictForm, setConflictForm] = useState({
+    id: "",
+    nome: "",
+    lugar: "",
+    causa: "",
+    totalMortos: 0,
+    totalFeridos: 0
+  });
+
+  const [groupForm, setGroupForm] = useState({
+    id: "",
+    nome: "",
+    numeroBaixas: 0
+  });
+
+  const [leaderForm, setLeaderForm] = useState({
+    nome: "",
+    idGrupoArmado: "",
+    apoio: ""
+  });
+
+  const [chiefForm, setChiefForm] = useState({
+    id: "",
+    faixaHierarquica: "",
+    nomeLiderPolitico: "",
+    numeroDivisao: ""
+  });
+
+  const [divisionForm, setDivisionForm] = useState({
+    numeroDivisao: "",
+    idGrupoArmado: "",
+    numeroBarcos: 0,
+    numeroTanques: 0,
+    numeroAvioes: 0,
+    numeroHomens: 0,
+    numeroBaixas: 0
+  });
+
+  // Fetch reference data
+  const { data: armedGroups } = useQuery({
+    queryKey: ["/api/armed-groups"],
+    queryFn: () => api.getArmedGroups(),
+  });
+
+  const { data: politicalLeaders } = useQuery({
+    queryKey: ["/api/political-leaders"],
+    queryFn: () => api.getPoliticalLeaders(),
+  });
+
+  const { data: divisions } = useQuery({
+    queryKey: ["/api/divisions"],
+    queryFn: () => api.getDivisions(),
+  });
+
+  // Mutations
+  const createConflictMutation = useMutation({
+    mutationFn: api.createConflict,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/conflicts"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/statistics"] });
+      setConflictForm({ id: "", nome: "", lugar: "", causa: "", totalMortos: 0, totalFeridos: 0 });
+      toast({ title: "Conflito criado", description: "O conflito foi cadastrado com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar conflito",
+        description: error.details || "Ocorreu um erro ao cadastrar o conflito.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const createGroupMutation = useMutation({
+    mutationFn: api.createArmedGroup,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/armed-groups"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/statistics"] });
+      setGroupForm({ id: "", nome: "", numeroBaixas: 0 });
+      toast({ title: "Grupo criado", description: "O grupo armado foi cadastrado com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar grupo",
+        description: error.details || "Ocorreu um erro ao cadastrar o grupo armado.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const createLeaderMutation = useMutation({
+    mutationFn: api.createPoliticalLeader,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/political-leaders"] });
+      setLeaderForm({ nome: "", idGrupoArmado: "", apoio: "" });
+      toast({ title: "Líder criado", description: "O líder político foi cadastrado com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar líder",
+        description: error.details || "Ocorreu um erro ao cadastrar o líder político.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const createChiefMutation = useMutation({
+    mutationFn: api.createMilitaryChief,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/military-chiefs"] });
+      setChiefForm({ id: "", faixaHierarquica: "", nomeLiderPolitico: "", numeroDivisao: "" });
+      toast({ title: "Chefe criado", description: "O chefe militar foi cadastrado com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar chefe",
+        description: error.details || "Ocorreu um erro ao cadastrar o chefe militar.",
+        variant: "destructive"
+      });
+    }
+  });
+
+  const createDivisionMutation = useMutation({
+    mutationFn: api.createDivision,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/divisions"] });
+      setDivisionForm({ numeroDivisao: "", idGrupoArmado: "", numeroBarcos: 0, numeroTanques: 0, numeroAvioes: 0, numeroHomens: 0, numeroBaixas: 0 });
+      toast({ title: "Divisão criada", description: "A divisão foi cadastrada com sucesso." });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Erro ao criar divisão",
+        description: error.details || "Ocorreu um erro ao cadastrar a divisão.",
+        variant: "destructive"
+      });
+    }
+  });
 
   const handleSubmitConflict = (e: React.FormEvent) => {
     e.preventDefault();
