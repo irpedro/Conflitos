@@ -68,13 +68,8 @@ export const chefeMilitar = pgTable("chefe_militar", {
   id: integer("id").primaryKey(),
   faixaHierarquica: varchar("faixa_hierarquica", { length: 30 }).notNull(),
   nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(),
-  idGrupoArmado: integer("id_grupo_armado").notNull(),
   numeroDivisao: integer("numero_divisao").notNull(),
 }, (table) => ({
-  liderPoliticoFk: foreignKey({
-    columns: [table.nomeLiderPolitico, table.idGrupoArmado],
-    foreignColumns: [liderPolitico.nome, liderPolitico.idGrupoArmado],
-  }),
   divisaoFk: foreignKey({
     columns: [table.numeroDivisao],
     foreignColumns: [divisao.numeroDivisao],
@@ -324,7 +319,6 @@ export const insertLiderPoliticoSchema = createInsertSchema(liderPolitico).exten
 
 export const insertChefeMilitarSchema = createInsertSchema(chefeMilitar).extend({
   id: optionalNumberFromString,
-  idGrupoArmado: numberFromString,
   numeroDivisao: numberFromString,
 });
 
