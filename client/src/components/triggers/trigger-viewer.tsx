@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Shield, Zap, Database } from "lucide-react";
+import { AlertTriangle, Shield, Zap, Copy, BarChart3, Database } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -14,11 +14,11 @@ export default function TriggerViewer() {
     queryFn: () => api.getTriggerInfo(),
   });
 
-  const handleTestConstraint = (constraintType: string) => {
+  const copyToClipboard = (text: string, name: string) => {
+    navigator.clipboard.writeText(text);
     toast({
-      title: "Teste de Restrição",
-      description: `Simulando violação da restrição: ${constraintType}`,
-      variant: "destructive",
+      title: "Código copiado",
+      description: `O código do trigger "${name}" foi copiado para a área de transferência.`,
     });
   };
 
@@ -26,17 +26,20 @@ export default function TriggerViewer() {
     {
       name: "Limite de Chefes por Divisão",
       description: "Limita o número máximo de 3 chefes militares por divisão",
+      table: "chefe_militar",
+      event: "BEFORE INSERT",
       active: true,
       code: `CREATE FUNCTION limita_chefe_por_divisao() RETURNS trigger AS $$
 BEGIN
     IF(SELECT COUNT(*) FROM chefe_militar WHERE numero_divisao = NEW.numero_divisao) >= 3
         THEN RAISE EXCEPTION 'A divisão escolhida já tem o máximo de 3 chefes';
     END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER teste_limite_chefe_div
+CREATE TRIGGER trigger_limite_chefe_div
 BEFORE INSERT ON chefe_militar
 FOR EACH ROW
 EXECUTE FUNCTION limita_chefe_por_divisao();`,
@@ -44,24 +47,66 @@ EXECUTE FUNCTION limita_chefe_por_divisao();`,
       color: "yellow"
     },
     {
-      name: "Validação de Hierarquia",
-      description: "Garante que a estrutura hierárquica seja respeitada",
+      name: "Validação de Hierarquia de Conflitos",
+      description: "Garante que cada conflito esteja em exatamente uma subclasse (religioso, territorial, econômico ou racial)",
+      table: "conflito",
+      event: "AFTER INSERT OR UPDATE",
       active: true,
-      code: `CREATE FUNCTION hierarquia_de_conflitos() RETURNS trigger AS $$
+      code: `CREATE FUNCTION teste_hierarquia() RETURNS trigger AS $$
+DECLARE contador INTEGER := 0;
+
 BEGIN
-    -- Validações de hierarquia organizacional
-    -- Verifica se líderes políticos pertencem aos grupos corretos
-    -- Valida estrutura de comando militar
+    SELECT
+        (SELECT COUNT(*) FROM conflito_religioso WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM conflito_territorial WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM conflito_economico WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM conflito_racial WHERE id_conflito = NEW.id)
+    INTO contador;
+
+    IF contador != 1 
+        THEN RAISE EXCEPTION 'Conflito % deve estar em exatamente uma subclasse. Atualmente está em %.', NEW.id, contador;
+    END IF;
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER validacao_hierarquia
-BEFORE INSERT OR UPDATE ON chefe_militar
+CREATE TRIGGER trigger_hierarquia
+AFTER INSERT OR UPDATE ON conflito
 FOR EACH ROW
-EXECUTE FUNCTION hierarquia_de_conflitos();`,
+EXECUTE FUNCTION teste_hierarquia();`,
       icon: Shield,
       color: "blue"
+    },
+    {
+      name: "Atualização Automática de Baixas",
+      description: "Atualiza automaticamente o total de baixas do grupo armado quando há mudanças nas divisões",
+      table: "divisao",
+      event: "AFTER INSERT OR UPDATE OR DELETE",
+      active: true,
+      code: `CREATE OR REPLACE FUNCTION atualizar_total_baixas_grupo() RETURNS TRIGGER AS $$
+
+DECLARE total INT;
+
+BEGIN
+    SELECT SUM(numero_baixas) INTO total
+    FROM divisao
+    WHERE id_grupo_armado = NEW.id_grupo_armado;
+
+    UPDATE grupo_armado
+    SET numero_baixas = COALESCE(total, 0)
+    WHERE id = NEW.id_grupo_armado;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_atualizar_baixas
+AFTER INSERT OR UPDATE OR DELETE ON divisao
+FOR EACH ROW
+EXECUTE FUNCTION atualizar_total_baixas_grupo();`,
+      icon: BarChart3,
+      color: "green"
     }
   ];
 
@@ -114,143 +159,89 @@ EXECUTE FUNCTION hierarquia_de_conflitos();`,
   ];
 
   return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Implemented Triggers */}
-        <Card className="fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Zap className="w-5 h-5 mr-2 text-yellow-600" />
-              Triggers Implementados
-            </CardTitle>
-            <p className="text-sm text-slate-500">Restrições de integridade ativas</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {triggerDefinitions.map((trigger) => {
-                const Icon = trigger.icon;
-                return (
-                  <div key={trigger.name} className="border border-slate-200 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center">
-                        <Icon className="w-5 h-5 mr-2 text-yellow-600" />
-                        <h4 className="font-medium text-slate-800">{trigger.name}</h4>
-                      </div>
-                      <Badge className="bg-green-100 text-green-800">
-                        ATIVO
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-slate-600 mb-3">{trigger.description}</p>
-                    <div className="bg-slate-900 rounded-lg p-3 overflow-x-auto">
-                      <pre className="text-green-400 text-xs font-mono whitespace-pre-wrap">
-                        <code>{trigger.code}</code>
-                      </pre>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-800 mb-2">Triggers & Restrições</h1>
+        <p className="text-slate-600">Funções, triggers e validações implementadas no sistema de conflitos armados</p>
+      </div>
 
-        {/* Integrity Constraints */}
-        <Card className="fade-in">
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Database className="w-5 h-5 mr-2 text-blue-600" />
-              Restrições de Integridade
-            </CardTitle>
-            <p className="text-sm text-slate-500">Constraints aplicadas no banco</p>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {constraints.map((constraint) => (
-                <div key={constraint.name} className="border border-slate-200 rounded-lg p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="font-medium text-slate-800">{constraint.name}</h4>
-                    <Badge className={`${
-                      constraint.color === 'blue' ? 'bg-blue-100 text-blue-800' :
-                      constraint.color === 'purple' ? 'bg-purple-100 text-purple-800' :
-                      constraint.color === 'green' ? 'bg-green-100 text-green-800' :
-                      'bg-yellow-100 text-yellow-800'
-                    }`}>
-                      {constraint.count} ATIVAS
-                    </Badge>
+      {/* Triggers Grid */}
+      <div className="grid grid-cols-1 gap-6">
+        {triggerDefinitions.map((trigger) => {
+          const Icon = trigger.icon;
+          return (
+            <Card key={trigger.name} className="fade-in">
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    <Icon className={`w-6 h-6 mr-3 ${
+                      trigger.color === 'yellow' ? 'text-yellow-600' :
+                      trigger.color === 'blue' ? 'text-blue-600' :
+                      'text-green-600'
+                    }`} />
+                    <div>
+                      <CardTitle className="text-xl">{trigger.name}</CardTitle>
+                      <p className="text-sm text-slate-500 mt-1">
+                        Tabela: <span className="font-mono bg-slate-100 px-2 py-0.5 rounded">{trigger.table}</span> • 
+                        Evento: <span className="font-mono bg-slate-100 px-2 py-0.5 rounded ml-1">{trigger.event}</span>
+                      </p>
+                    </div>
                   </div>
-                  <p className="text-sm text-slate-600 mb-2">{constraint.description}</p>
-                  <div className="text-sm text-slate-500 space-y-1">
-                    {constraint.examples.slice(0, 3).map((example, index) => (
-                      <div key={index}>• {example}</div>
-                    ))}
-                    {constraint.examples.length > 3 && (
-                      <div className="text-slate-400">... e mais {constraint.examples.length - 3} constraints</div>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800">ATIVO</Badge>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => copyToClipboard(trigger.code, trigger.name)}
+                    >
+                      <Copy className="w-4 h-4 mr-1" />
+                      Copiar
+                    </Button>
                   </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <p className="text-slate-700 mb-4">{trigger.description}</p>
+                <div className="bg-slate-900 rounded-lg p-4 overflow-x-auto">
+                  <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
+                    <code>{trigger.code}</code>
+                  </pre>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Sistema de Triggers Ativos */}
+      <Card className="fade-in">
+        <CardHeader>
+          <CardTitle className="flex items-center">
+            <Zap className="w-5 h-5 mr-2 text-blue-600" />
+            Sistema de Triggers Ativos
+          </CardTitle>
+          <p className="text-sm text-slate-500">Status dos triggers implementados no banco de dados</p>
+        </CardHeader>
+        <CardContent>
+          {triggers && triggers.length > 0 ? (
+            <div className="space-y-3">
+              {triggers.map((trigger, index) => (
+                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                  <div className="flex items-center">
+                    <Zap className="w-4 h-4 mr-2 text-green-600" />
+                    <span className="font-mono text-sm">{trigger.name}</span>
+                  </div>
+                  <Badge className="bg-green-100 text-green-800">ATIVO</Badge>
                 </div>
               ))}
             </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Trigger Testing */}
-      <Card className="mt-6 fade-in">
-        <CardHeader>
-          <CardTitle>Teste de Restrições</CardTitle>
-          <p className="text-sm text-slate-500">Teste as validações implementadas no sistema</p>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <h4 className="font-medium text-slate-800 mb-3">Teste: Limite de Chefes</h4>
-              <p className="text-sm text-slate-600 mb-4">
-                Tente adicionar um 4º chefe militar à divisão 1 (que já possui 3 chefes)
-              </p>
-              <Button 
-                onClick={() => handleTestConstraint("Limite de Chefes")}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                <AlertTriangle className="w-4 h-4 mr-2" />
-                Executar Teste
-              </Button>
-              <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex items-start">
-                  <AlertTriangle className="w-4 h-4 text-red-600 mt-0.5 mr-2" />
-                  <div>
-                    <div className="text-sm font-medium text-red-800">Erro: Constraint Violada</div>
-                    <div className="text-xs text-red-600 mt-1">
-                      A divisão escolhida já tem o máximo de 3 chefes
-                    </div>
-                  </div>
-                </div>
-              </div>
+          ) : (
+            <div className="text-center py-8 text-slate-500">
+              <Zap className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+              <p>Carregando informações dos triggers...</p>
             </div>
-
-            <div>
-              <h4 className="font-medium text-slate-800 mb-3">Teste: Foreign Key</h4>
-              <p className="text-sm text-slate-600 mb-4">
-                Tente inserir um chefe militar com divisão inexistente
-              </p>
-              <Button 
-                onClick={() => handleTestConstraint("Foreign Key")}
-                className="bg-orange-600 hover:bg-orange-700"
-              >
-                <Database className="w-4 h-4 mr-2" />
-                Executar Teste
-              </Button>
-              <div className="mt-4 p-3 bg-orange-50 border border-orange-200 rounded-lg">
-                <div className="flex items-start">
-                  <Database className="w-4 h-4 text-orange-600 mt-0.5 mr-2" />
-                  <div>
-                    <div className="text-sm font-medium text-orange-800">Erro: Chave Estrangeira</div>
-                    <div className="text-xs text-orange-600 mt-1">
-                      Divisão não encontrada no sistema
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>
