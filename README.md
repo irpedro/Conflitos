@@ -5,12 +5,7 @@ Sistema acadêmico especializado em análise de conflitos armados, fornecendo um
 ## Deploy na Nuvem
 
 ### Railway
-1. Acesse [railway.app](https://railway.app)
-2. Faça login com GitHub
-3. Clique em "New Project" → "Deploy from GitHub repo"
-4. Conecte este repositório
-5. Railway detectará automaticamente o Node.js e fará o deploy
-6. O banco PostgreSQL será criado automaticamente
+1. Acesse [[railway.app](https://railway.app)](https://conflict-analysis-app-production.up.railway.app/)
 
 ## Configuração do Banco
 
