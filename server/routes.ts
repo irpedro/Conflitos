@@ -132,7 +132,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertDivisaoSchema.parse(req.body);
       
-      await validators.validateUniqueDivisionNumber(validatedData.numeroDivisao);
+            // Check if division number already exists
+      const existingDivision = await storage.getDivisionById(validatedData.numeroDivisao.toString());
+      if (existingDivision) {
+        return res.status(400).json({ 
+          error: "Duplicate ID", 
+          details: "A division with this number already exists" 
+        });
+      }
+             
       await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
       
       const division = await storage.createDivision(validatedData);
