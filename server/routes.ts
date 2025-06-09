@@ -118,110 +118,108 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Divisions endpoints
-  app.get("/api/divisions", async (_req, res) => {
-    try {
-      const divisions = await storage.getAllDivisions();
-      res.json(divisions);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch divisions" });
+  // 1. DIVISIONS - Melhorar apenas a mensagem (já tem verificação)
+app.post("/api/divisions", async (req, res) => {
+  try {
+    const validatedData = insertDivisaoSchema.parse(req.body);
+    
+    // Check if division number already exists
+    const existingDivision = await storage.getDivisionById(validatedData.numeroDivisao);
+    if (existingDivision) {
+      return res.status(400).json({ 
+        error: "Division already exists", 
+        details: `A division with number ${validatedData.numeroDivisao} already exists in the system.`
+      });
     }
-  });
+           
+    await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
+    
+    const division = await storage.createDivision(validatedData);
+    res.status(201).json(division);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid data", details: error.errors });
+    }
+    
+    const errorResponse = handleValidationError(error);
+    return res.status(errorResponse.status).json(errorResponse.body);
+  }
+});
 
-  app.post("/api/divisions", async (req, res) => {
-    try {
-      const validatedData = insertDivisaoSchema.parse(req.body);
+// 2. POLITICAL LEADERS - Adicionar verificação básica
+app.post("/api/political-leaders", async (req, res) => {
+  try {
+    const validatedData = insertLiderPoliticoSchema.parse(req.body);
+    
+    // Check if political leader already exists (assuming nome + idGrupoArmado is unique)
+    const existingLeaders = await storage.getAllPoliticalLeaders();
+    const existingLeader = existingLeaders.find(leader => 
+      leader.nome === validatedData.nome && 
+      leader.idGrupoArmado === validatedData.idGrupoArmado
+    );
+    
+    if (existingLeader) {
+      return res.status(400).json({ 
+        error: "Political leader already exists", 
+        details: `A political leader named "${validatedData.nome}" already exists in this armed group.`
+      });
+    }
+    
+    await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
+    
+    const leader = await storage.createPoliticalLeader(validatedData);
+    res.status(201).json(leader);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid data", details: error.errors });
+    }
+    
+    const errorResponse = handleValidationError(error);
+    return res.status(errorResponse.status).json(errorResponse.body);
+  }
+});
+
+// 3. MILITARY CHIEFS - Adicionar verificação de ID
+app.post("/api/military-chiefs", async (req, res) => {
+  try {
+    const validatedData = insertChefeMilitarSchema.parse(req.body);
+    
+    // Ensure id is set for creation
+    let finalId = validatedData.id;
+    if (!finalId) {
+      const chiefs = await storage.getAllMilitaryChiefs();
+      const maxId = chiefs.reduce((max, c) => Math.max(max, c.id), 0);
+      finalId = maxId + 1;
+    } else {
+      // Check if military chief ID already exists
+      const existingChiefs = await storage.getAllMilitaryChiefs();
+      const existingChief = existingChiefs.find(chief => chief.id === validatedData.id);
       
-            // Check if division number already exists
-      const existingDivision = await storage.getDivisionById(validatedData.numeroDivisao);
-      if (existingDivision) {
+      if (existingChief) {
         return res.status(400).json({ 
-          error: "Duplicate ID", 
-          details: "A division with this number already exists" 
+          error: "Military chief already exists", 
+          details: `A military chief with ID ${validatedData.id} already exists in the system.`
         });
       }
-             
-      await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
-      
-      const division = await storage.createDivision(validatedData);
-      res.status(201).json(division);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      
-      const errorResponse = handleValidationError(error);
-      return res.status(errorResponse.status).json(errorResponse.body);
     }
-  });
-
-  // Political Leaders endpoints
-  app.get("/api/political-leaders", async (_req, res) => {
-    try {
-      const leaders = await storage.getAllPoliticalLeaders();
-      res.json(leaders);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch political leaders" });
+    
+    await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
+    await validators.validateDivisionExists(validatedData.numeroDivisao);
+    
+    const chief = await storage.createMilitaryChief({
+      ...validatedData,
+      id: finalId
+    });
+    res.status(201).json(chief);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ error: "Invalid data", details: error.errors });
     }
-  });
-
-  app.post("/api/political-leaders", async (req, res) => {
-    try {
-      const validatedData = insertLiderPoliticoSchema.parse(req.body);
-      
-      await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
-      
-      const leader = await storage.createPoliticalLeader(validatedData);
-      res.status(201).json(leader);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      
-      const errorResponse = handleValidationError(error);
-      return res.status(errorResponse.status).json(errorResponse.body);
-    }
-  });
-
-  // Military Chiefs endpoints
-  app.get("/api/military-chiefs", async (_req, res) => {
-    try {
-      const chiefs = await storage.getAllMilitaryChiefs();
-      res.json(chiefs);
-    } catch (error) {
-      res.status(500).json({ error: "Failed to fetch military chiefs" });
-    }
-  });
-
-  app.post("/api/military-chiefs", async (req, res) => {
-    try {
-      const validatedData = insertChefeMilitarSchema.parse(req.body);
-      
-      await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
-      await validators.validateDivisionExists(validatedData.numeroDivisao);
-      
-      // Ensure id is set for creation
-      let finalId = validatedData.id;
-      if (!finalId) {
-        const chiefs = await storage.getAllMilitaryChiefs();
-        const maxId = chiefs.reduce((max, c) => Math.max(max, c.id), 0);
-        finalId = maxId + 1;
-      }
-      
-      const chief = await storage.createMilitaryChief({
-        ...validatedData,
-        id: finalId
-      });
-      res.status(201).json(chief);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: "Invalid data", details: error.errors });
-      }
-      
-      const errorResponse = handleValidationError(error);
-      return res.status(errorResponse.status).json(errorResponse.body);
-    }
-  });
+    
+    const errorResponse = handleValidationError(error);
+    return res.status(errorResponse.status).json(errorResponse.body);
+  }
+});
 
   // Mediator Organizations endpoints
   app.get("/api/mediator-orgs", async (_req, res) => {
