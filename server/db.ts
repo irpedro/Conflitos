@@ -1,17 +1,21 @@
-import { neon } from '@neondatabase/serverless';
-import { drizzle } from 'drizzle-orm/neon-http';
+import { drizzle } from 'drizzle-orm/node-postgres';
+import pkg from 'pg';
 import * as schema from "@shared/schema";
 
-// Construir a URL manualmente para evitar problemas
-const DB_HOST = 'hopper.proxy.rlwy.net';
-const DB_PORT = '25260';
-const DB_USER = 'postgres';
-const DB_PASS = 'hcFCYDBhsYoQxRSFVkkPiwOCIqjnyeLR';
-const DB_NAME = 'railway';
+const { Pool } = pkg;
 
-const databaseUrl = `postgresql://${DB_USER}:${DB_PASS}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=require`;
+const databaseUrl = process.env.DATABASE_URL || process.env.DATABASE_PUBLIC_URL;
 
-console.log('Manual URL hostname:', DB_HOST);
+if (!databaseUrl) {
+  throw new Error("Database URL not found");
+}
 
-const sql = neon(databaseUrl);
-export const db = drizzle(sql, { schema });
+// Usar Pool do pg como no guia do Neon
+const pool = new Pool({ 
+  connectionString: databaseUrl,
+  ssl: {
+    rejectUnauthorized: false
+  }
+});
+
+export const db = drizzle(pool, { schema });
