@@ -3,25 +3,25 @@ import { relations } from "drizzle-orm";
 import { createInsertSchema, createSelectSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Core tables
+// Core tables - Updated to match new SQL schema with INT IDs
 export const conflito = pgTable("conflito", {
-  id: varchar("id", { length: 2 }).primaryKey(),
+  id: integer("id").primaryKey(),
   totalMortos: integer("total_mortos").notNull(),
   totalFeridos: integer("total_feridos").notNull(),
-  causa: varchar("causa", { length: 50 }).notNull(), // 30 → 50
-  lugar: varchar("lugar", { length: 50 }).notNull(), // 30 → 50
-  nome: varchar("nome", { length: 50 }).notNull(),   // 30 → 50
+  causa: varchar("causa", { length: 50 }).notNull(),
+  lugar: varchar("lugar", { length: 50 }).notNull(),
+  nome: varchar("nome", { length: 50 }).notNull(),
 });
 
 export const grupoArmado = pgTable("grupo_armado", {
-  id: varchar("id", { length: 2 }).primaryKey(),
-  nome: varchar("nome", { length: 30 }).notNull(),   // 15 → 30
+  id: integer("id").primaryKey(),
+  nome: varchar("nome", { length: 30 }).notNull(),
   numeroBaixas: integer("numero_baixas").notNull(),
 });
 
 export const divisao = pgTable("divisao", {
   numeroDivisao: integer("numero_divisao").primaryKey(),
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
   numeroBarcos: integer("numero_barcos").notNull(),
   numeroTanques: integer("numero_tanques").notNull(),
   numeroAvioes: integer("numero_avioes").notNull(),
@@ -35,24 +35,18 @@ export const divisao = pgTable("divisao", {
 }));
 
 export const orgMediadora = pgTable("org_mediadora", {
-  id: varchar("id", { length: 2 }).primaryKey(),
+  id: integer("id").primaryKey(),
   nome: varchar("nome", { length: 30 }).notNull(),
-  tipoOrg: varchar("tipo_org", { length: 20 }).notNull(), // 15 → 20
-  orgSuperior: varchar("org_superior", { length: 2 }),    // 2 → 2 (mas agora com FK)
+  tipoOrg: varchar("tipo_org", { length: 20 }).notNull(),
+  orgSuperior: varchar("org_superior", { length: 10 }),
   numeroPessoasSustentadas: integer("numero_pessoas_sustentadas").notNull(),
-  tipoAjuda: varchar("tipo_ajuda", { length: 20 }).notNull(), // 15 → 20
-}, (table) => ({
-  // Foreign key para auto-referência (org_superior)
-  orgSuperiorFk: foreignKey({
-    columns: [table.orgSuperior],
-    foreignColumns: [table.id],
-  }),
-}));
+  tipoAjuda: varchar("tipo_ajuda", { length: 20 }).notNull(),
+});
 
 export const liderPolitico = pgTable("lider_politico", {
-  nome: varchar("nome", { length: 30 }).notNull(),        // 15 → 30
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
-  apoio: varchar("apoio", { length: 50 }).notNull(),      // 30 → 50
+  nome: varchar("nome", { length: 30 }).notNull(),
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
+  apoio: varchar("apoio", { length: 50 }).notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.nome, table.idGrupoArmado] }),
   grupoArmadoFk: foreignKey({
@@ -62,19 +56,19 @@ export const liderPolitico = pgTable("lider_politico", {
 }));
 
 export const traficantes = pgTable("traficantes", {
-  nome: varchar("nome", { length: 30 }).primaryKey(),     // 15 → 30
+  nome: varchar("nome", { length: 30 }).primaryKey(),
 });
 
 export const armas = pgTable("armas", {
-  nome: varchar("nome", { length: 30 }).primaryKey(),     // 15 → 30
+  nome: varchar("nome", { length: 30 }).primaryKey(),
   capacidadeDestrutiva: integer("capacidade_destrutiva").notNull(),
 });
 
 export const chefeMilitar = pgTable("chefe_militar", {
-  id: varchar("id", { length: 2 }).primaryKey(),
-  faixaHierarquica: varchar("faixa_hierarquica", { length: 30 }).notNull(), // 15 → 30
-  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(), // 15 → 30
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
+  id: integer("id").primaryKey(),
+  faixaHierarquica: varchar("faixa_hierarquica", { length: 30 }).notNull(),
+  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(),
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
   numeroDivisao: integer("numero_divisao").notNull(),
 }, (table) => ({
   liderPoliticoFk: foreignKey({
@@ -89,7 +83,7 @@ export const chefeMilitar = pgTable("chefe_militar", {
 
 // Conflict classification tables
 export const religiao = pgTable("religiao", {
-  idConflito: varchar("id_conflito", { length: 2 }).primaryKey(),
+  idConflito: integer("id_conflito").primaryKey(),
   religiaoAfetada: varchar("religiao_afetada", { length: 10 }).notNull(),
 }, (table) => ({
   conflitoFk: foreignKey({
@@ -99,7 +93,7 @@ export const religiao = pgTable("religiao", {
 }));
 
 export const territorio = pgTable("territorio", {
-  idConflito: varchar("id_conflito", { length: 2 }).primaryKey(),
+  idConflito: integer("id_conflito").primaryKey(),
   areaAfetada: varchar("area_afetada", { length: 10 }).notNull(),
 }, (table) => ({
   conflitoFk: foreignKey({
@@ -109,7 +103,7 @@ export const territorio = pgTable("territorio", {
 }));
 
 export const economia = pgTable("economia", {
-  idConflito: varchar("id_conflito", { length: 2 }).primaryKey(),
+  idConflito: integer("id_conflito").primaryKey(),
   materiaPrimaDisputada: varchar("materia_prima_disputada", { length: 10 }).notNull(),
 }, (table) => ({
   conflitoFk: foreignKey({
@@ -119,7 +113,7 @@ export const economia = pgTable("economia", {
 }));
 
 export const raca = pgTable("raca", {
-  idConflito: varchar("id_conflito", { length: 2 }).primaryKey(),
+  idConflito: integer("id_conflito").primaryKey(),
   etniaAfetada: varchar("etnia_afetada", { length: 10 }).notNull(),
 }, (table) => ({
   conflitoFk: foreignKey({
@@ -129,7 +123,7 @@ export const raca = pgTable("raca", {
 }));
 
 export const paisesEmConflito = pgTable("paises_em_conflito", {
-  idConflito: varchar("id_conflito", { length: 2 }).notNull(),
+  idConflito: integer("id_conflito").notNull(),
   paisEnvolvido: varchar("pais_envolvido", { length: 30 }).notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.idConflito, table.paisEnvolvido] }),
@@ -141,8 +135,8 @@ export const paisesEmConflito = pgTable("paises_em_conflito", {
 
 // Participation tables
 export const participacaoGrupoArmado = pgTable("participacao_grupo_armado", {
-  idConflito: varchar("id_conflito", { length: 2 }).notNull(),
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
+  idConflito: integer("id_conflito").notNull(),
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
   dataEntrada: varchar("data_entrada", { length: 10 }).notNull(),
   dataSaida: varchar("data_saida", { length: 10 }).notNull(),
 }, (table) => ({
@@ -158,8 +152,8 @@ export const participacaoGrupoArmado = pgTable("participacao_grupo_armado", {
 }));
 
 export const participacaoOrgMediadora = pgTable("participacao_org_mediadora", {
-  idConflito: varchar("id_conflito", { length: 2 }).notNull(),
-  idOrgMediadora: varchar("id_org_mediadora", { length: 2 }).notNull(),
+  idConflito: integer("id_conflito").notNull(),
+  idOrgMediadora: integer("id_org_mediadora").notNull(),
   dataEntrada: varchar("data_entrada", { length: 10 }).notNull(),
   dataSaida: varchar("data_saida", { length: 10 }).notNull(),
 }, (table) => ({
@@ -175,9 +169,9 @@ export const participacaoOrgMediadora = pgTable("participacao_org_mediadora", {
 }));
 
 export const dialogo = pgTable("dialogo", {
-  idOrgMediadora: varchar("id_org_mediadora", { length: 2 }).notNull(),
-  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(), // 15 → 30
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
+  idOrgMediadora: integer("id_org_mediadora").notNull(),
+  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(),
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.idOrgMediadora, table.nomeLiderPolitico, table.idGrupoArmado] }),
   orgMediadoraFk: foreignKey({
@@ -191,8 +185,8 @@ export const dialogo = pgTable("dialogo", {
 }));
 
 export const lideranca = pgTable("lideranca", {
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
-  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(), // 15 → 30
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
+  nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.idGrupoArmado, table.nomeLiderPolitico] }),
   grupoArmadoFk: foreignKey({
@@ -206,9 +200,9 @@ export const lideranca = pgTable("lideranca", {
 }));
 
 export const fornecimento = pgTable("fornecimento", {
-  idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
-  nomeTraficante: varchar("nome_traficante", { length: 30 }).notNull(),    // 15 → 30
-  nomeArma: varchar("nome_arma", { length: 30 }).notNull(),                // 15 → 30
+  idGrupoArmado: integer("id_grupo_armado").notNull(),
+  nomeTraficante: varchar("nome_traficante", { length: 30 }).notNull(),
+  nomeArma: varchar("nome_arma", { length: 30 }).notNull(),
   quantidadeFornecida: integer("quantidade_fornecida").notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.idGrupoArmado, table.nomeTraficante, table.nomeArma] }),
@@ -227,8 +221,8 @@ export const fornecimento = pgTable("fornecimento", {
 }));
 
 export const contrabandeia = pgTable("contrabandeia", {
-  nomeTraficante: varchar("nome_traficante", { length: 30 }).notNull(),    // 15 → 30
-  nomeArma: varchar("nome_arma", { length: 30 }).notNull(),                // 15 → 30
+  nomeTraficante: varchar("nome_traficante", { length: 30 }).notNull(),
+  nomeArma: varchar("nome_arma", { length: 30 }).notNull(),
   quantidadePossuida: integer("quantidade_possuida").notNull(),
 }, (table) => ({
   pk: primaryKey({ columns: [table.nomeArma, table.nomeTraficante] }),
@@ -242,7 +236,7 @@ export const contrabandeia = pgTable("contrabandeia", {
   }),
 }));
 
-// Relations - COMPLETAS E CORRIGIDAS
+// Relations
 export const conflitoRelations = relations(conflito, ({ many }) => ({
   religiao: many(religiao),
   territorio: many(territorio),
@@ -269,157 +263,7 @@ export const divisaoRelations = relations(divisao, ({ one, many }) => ({
   chefesMilitares: many(chefeMilitar),
 }));
 
-// NOVAS RELAÇÕES ADICIONADAS
-export const orgMediadoraRelations = relations(orgMediadora, ({ one, many }) => ({
-  orgSuperior: one(orgMediadora, {
-    fields: [orgMediadora.orgSuperior],
-    references: [orgMediadora.id],
-    relationName: "orgHierarchy",
-  }),
-  orgSubordinadas: many(orgMediadora, {
-    relationName: "orgHierarchy",
-  }),
-  participacaoConflitos: many(participacaoOrgMediadora),
-  dialogos: many(dialogo),
-}));
-
-export const liderPoliticoRelations = relations(liderPolitico, ({ one, many }) => ({
-  grupoArmado: one(grupoArmado, {
-    fields: [liderPolitico.idGrupoArmado],
-    references: [grupoArmado.id],
-  }),
-  chefesMilitares: many(chefeMilitar),
-  dialogos: many(dialogo),
-  lideranca: many(lideranca),
-}));
-
-export const chefeMilitarRelations = relations(chefeMilitar, ({ one }) => ({
-  liderPolitico: one(liderPolitico, {
-    fields: [chefeMilitar.nomeLiderPolitico, chefeMilitar.idGrupoArmado],
-    references: [liderPolitico.nome, liderPolitico.idGrupoArmado],
-  }),
-  divisao: one(divisao, {
-    fields: [chefeMilitar.numeroDivisao],
-    references: [divisao.numeroDivisao],
-  }),
-}));
-
-export const traficanteRelations = relations(traficantes, ({ many }) => ({
-  contrabandos: many(contrabandeia),
-  fornecimentos: many(fornecimento),
-}));
-
-export const armasRelations = relations(armas, ({ many }) => ({
-  contrabandos: many(contrabandeia),
-  fornecimentos: many(fornecimento),
-}));
-
-export const religiaoRelations = relations(religiao, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [religiao.idConflito],
-    references: [conflito.id],
-  }),
-}));
-
-export const territorioRelations = relations(territorio, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [territorio.idConflito],
-    references: [conflito.id],
-  }),
-}));
-
-export const economiaRelations = relations(economia, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [economia.idConflito],
-    references: [conflito.id],
-  }),
-}));
-
-export const racaRelations = relations(raca, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [raca.idConflito],
-    references: [conflito.id],
-  }),
-}));
-
-export const paisesEmConflitoRelations = relations(paisesEmConflito, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [paisesEmConflito.idConflito],
-    references: [conflito.id],
-  }),
-}));
-
-export const participacaoGrupoArmadoRelations = relations(participacaoGrupoArmado, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [participacaoGrupoArmado.idConflito],
-    references: [conflito.id],
-  }),
-  grupoArmado: one(grupoArmado, {
-    fields: [participacaoGrupoArmado.idGrupoArmado],
-    references: [grupoArmado.id],
-  }),
-}));
-
-export const participacaoOrgMediadoraRelations = relations(participacaoOrgMediadora, ({ one }) => ({
-  conflito: one(conflito, {
-    fields: [participacaoOrgMediadora.idConflito],
-    references: [conflito.id],
-  }),
-  orgMediadora: one(orgMediadora, {
-    fields: [participacaoOrgMediadora.idOrgMediadora],
-    references: [orgMediadora.id],
-  }),
-}));
-
-export const dialogoRelations = relations(dialogo, ({ one }) => ({
-  orgMediadora: one(orgMediadora, {
-    fields: [dialogo.idOrgMediadora],
-    references: [orgMediadora.id],
-  }),
-  liderPolitico: one(liderPolitico, {
-    fields: [dialogo.nomeLiderPolitico, dialogo.idGrupoArmado],
-    references: [liderPolitico.nome, liderPolitico.idGrupoArmado],
-  }),
-}));
-
-export const liderancaRelations = relations(lideranca, ({ one }) => ({
-  grupoArmado: one(grupoArmado, {
-    fields: [lideranca.idGrupoArmado],
-    references: [grupoArmado.id],
-  }),
-  liderPolitico: one(liderPolitico, {
-    fields: [lideranca.nomeLiderPolitico, lideranca.idGrupoArmado],
-    references: [liderPolitico.nome, liderPolitico.idGrupoArmado],
-  }),
-}));
-
-export const fornecimentoRelations = relations(fornecimento, ({ one }) => ({
-  grupoArmado: one(grupoArmado, {
-    fields: [fornecimento.idGrupoArmado],
-    references: [grupoArmado.id],
-  }),
-  traficante: one(traficantes, {
-    fields: [fornecimento.nomeTraficante],
-    references: [traficantes.nome],
-  }),
-  arma: one(armas, {
-    fields: [fornecimento.nomeArma],
-    references: [armas.nome],
-  }),
-}));
-
-export const contrabandeiaRelations = relations(contrabandeia, ({ one }) => ({
-  traficante: one(traficantes, {
-    fields: [contrabandeia.nomeTraficante],
-    references: [traficantes.nome],
-  }),
-  arma: one(armas, {
-    fields: [contrabandeia.nomeArma],
-    references: [armas.nome],
-  }),
-}));
-
-// Types - ATUALIZADOS
+// Types
 export type Conflito = typeof conflito.$inferSelect;
 export type InsertConflito = typeof conflito.$inferInsert;
 export type GrupoArmado = typeof grupoArmado.$inferSelect;
@@ -432,20 +276,57 @@ export type ChefeMilitar = typeof chefeMilitar.$inferSelect;
 export type InsertChefeMilitar = typeof chefeMilitar.$inferInsert;
 export type OrgMediadora = typeof orgMediadora.$inferSelect;
 export type InsertOrgMediadora = typeof orgMediadora.$inferInsert;
-export type Traficantes = typeof traficantes.$inferSelect;
-export type InsertTraficantes = typeof traficantes.$inferInsert;
-export type Armas = typeof armas.$inferSelect;
-export type InsertArmas = typeof armas.$inferInsert;
 
-// Insert schemas - COMPLETOS
-export const insertConflitoSchema = createInsertSchema(conflito);
-export const insertGrupoArmadoSchema = createInsertSchema(grupoArmado);
-export const insertDivisaoSchema = createInsertSchema(divisao);
-export const insertLiderPoliticoSchema = createInsertSchema(liderPolitico);
-export const insertChefeMilitarSchema = createInsertSchema(chefeMilitar);
-export const insertOrgMediadoraSchema = createInsertSchema(orgMediadora);
-export const insertTraficanteSchema = createInsertSchema(traficantes);
-export const insertArmaSchema = createInsertSchema(armas);
+// Helper for string to number conversion
+const numberFromString = z.union([
+  z.number(),
+  z.string().transform((val) => {
+    if (val === "" || val === null || val === undefined) return 0;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? 0 : num;
+  })
+]);
+
+const optionalNumberFromString = z.union([
+  z.number(),
+  z.string().transform((val) => {
+    if (val === "" || val === null || val === undefined) return undefined;
+    const num = parseInt(val, 10);
+    return isNaN(num) ? undefined : num;
+  })
+]).optional();
+
+// Insert schemas with string to number coercion
+export const insertConflitoSchema = createInsertSchema(conflito).extend({
+  id: optionalNumberFromString,
+  totalMortos: numberFromString,
+  totalFeridos: numberFromString,
+});
+
+export const insertGrupoArmadoSchema = createInsertSchema(grupoArmado).extend({
+  id: optionalNumberFromString,
+  numeroBaixas: numberFromString,
+});
+
+export const insertDivisaoSchema = createInsertSchema(divisao).extend({
+  numeroDivisao: numberFromString,
+  idGrupoArmado: numberFromString,
+  numeroBarcos: numberFromString,
+  numeroTanques: numberFromString,
+  numeroAvioes: numberFromString,
+  numeroHomens: numberFromString,
+  numeroBaixas: numberFromString,
+});
+
+export const insertLiderPoliticoSchema = createInsertSchema(liderPolitico).extend({
+  idGrupoArmado: numberFromString,
+});
+
+export const insertChefeMilitarSchema = createInsertSchema(chefeMilitar).extend({
+  id: optionalNumberFromString,
+  idGrupoArmado: numberFromString,
+  numeroDivisao: numberFromString,
+});
 
 // Keep original users table for compatibility
 export const users = pgTable("users", {
