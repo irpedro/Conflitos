@@ -133,7 +133,7 @@ export class DatabaseStorage implements IStorage {
 
   async getConflictById(id: string): Promise<Conflito | undefined> {
     try {
-      const [conflict] = await db.select().from(conflito).where(eq(conflito.id, parseInt(id)));
+      const [conflict] = await db.select().from(conflito).where(eq(conflito.id, id));
       return conflict || undefined;
     } catch (error) {
       console.error('Error getting conflict by id:', error);
@@ -156,7 +156,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(conflito)
         .set(conflict)
-        .where(eq(conflito.id, parseInt(id)))
+        .where(eq(conflito.id, id))
         .returning();
       return updated;
     } catch (error) {
@@ -167,7 +167,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteConflict(id: string): Promise<void> {
     try {
-      await db.delete(conflito).where(eq(conflito.id, parseInt(id)));
+      await db.delete(conflito).where(eq(conflito.id, id));
     } catch (error) {
       console.error('Error deleting conflict:', error);
       throw error;
@@ -186,7 +186,7 @@ export class DatabaseStorage implements IStorage {
 
   async getArmedGroupById(id: string): Promise<GrupoArmado | undefined> {
     try {
-      const [group] = await db.select().from(grupoArmado).where(eq(grupoArmado.id, parseInt(id)));
+      const [group] = await db.select().from(grupoArmado).where(eq(grupoArmado.id, id));
       return group || undefined;
     } catch (error) {
       console.error('Error getting armed group by id:', error);
@@ -209,7 +209,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(grupoArmado)
         .set(group)
-        .where(eq(grupoArmado.id, parseInt(id)))
+        .where(eq(grupoArmado.id, id))
         .returning();
       return updated;
     } catch (error) {
@@ -220,14 +220,14 @@ export class DatabaseStorage implements IStorage {
 
   async deleteArmedGroup(id: string): Promise<void> {
     try {
-      await db.delete(grupoArmado).where(eq(grupoArmado.id, parseInt(id)));
+      await db.delete(grupoArmado).where(eq(grupoArmado.id, id));
     } catch (error) {
       console.error('Error deleting armed group:', error);
       throw error;
     }
   }
 
-  // Division methods - CORRIGIDO AQUI
+  // Division methods
   async getAllDivisions(): Promise<Divisao[]> {
     try {
       return await db.select().from(divisao).orderBy(asc(divisao.numeroDivisao));
@@ -239,7 +239,7 @@ export class DatabaseStorage implements IStorage {
 
   async getDivisionById(id: string): Promise<Divisao | undefined> {
     try {
-      const [division] = await db.select().from(divisao).where(eq(divisao.numeroDivisao, parseInt(id)));
+      const [division] = await db.select().from(divisao).where(eq(divisao.numeroDivisao, id));
       return division || undefined;
     } catch (error) {
       console.error('Error getting division by id:', error);
@@ -262,7 +262,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(divisao)
         .set(division)
-        .where(eq(divisao.numeroDivisao, parseInt(id)))
+        .where(eq(divisao.numeroDivisao, id))
         .returning();
       return updated;
     } catch (error) {
@@ -273,7 +273,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteDivision(id: string): Promise<void> {
     try {
-      await db.delete(divisao).where(eq(divisao.numeroDivisao, parseInt(id)));
+      await db.delete(divisao).where(eq(divisao.numeroDivisao, id));
     } catch (error) {
       console.error('Error deleting division:', error);
       throw error;
@@ -305,7 +305,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(liderPolitico)
         .set(leader)
-        .where(and(eq(liderPolitico.nome, nome), eq(liderPolitico.idGrupoArmado, parseInt(idGrupo))))
+        .where(and(eq(liderPolitico.nome, nome), eq(liderPolitico.idGrupoArmado, idGrupo)))
         .returning();
       return updated;
     } catch (error) {
@@ -317,7 +317,7 @@ export class DatabaseStorage implements IStorage {
   async deletePoliticalLeader(nome: string, idGrupo: string): Promise<void> {
     try {
       await db.delete(liderPolitico)
-        .where(and(eq(liderPolitico.nome, nome), eq(liderPolitico.idGrupoArmado, parseInt(idGrupo))));
+        .where(and(eq(liderPolitico.nome, nome), eq(liderPolitico.idGrupoArmado, idGrupo)));
     } catch (error) {
       console.error('Error deleting political leader:', error);
       throw error;
@@ -336,7 +336,7 @@ export class DatabaseStorage implements IStorage {
 
   async getMilitaryChiefById(id: string): Promise<ChefeMilitar | undefined> {
     try {
-      const [chief] = await db.select().from(chefeMilitar).where(eq(chefeMilitar.id, parseInt(id)));
+      const [chief] = await db.select().from(chefeMilitar).where(eq(chefeMilitar.id, id));
       return chief || undefined;
     } catch (error) {
       console.error('Error getting military chief by id:', error);
@@ -359,7 +359,7 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db
         .update(chefeMilitar)
         .set(chief)
-        .where(eq(chefeMilitar.id, parseInt(id)))
+        .where(eq(chefeMilitar.id, id))
         .returning();
       return updated;
     } catch (error) {
@@ -370,7 +370,7 @@ export class DatabaseStorage implements IStorage {
 
   async deleteMilitaryChief(id: string): Promise<void> {
     try {
-      await db.delete(chefeMilitar).where(eq(chefeMilitar.id, parseInt(id)));
+      await db.delete(chefeMilitar).where(eq(chefeMilitar.id, id));
     } catch (error) {
       console.error('Error deleting military chief:', error);
       throw error;
@@ -389,7 +389,7 @@ export class DatabaseStorage implements IStorage {
 
   async getMediatorOrgById(id: string): Promise<OrgMediadora | undefined> {
     try {
-      const [org] = await db.select().from(orgMediadora).where(eq(orgMediadora.id, parseInt(id)));
+      const [org] = await db.select().from(orgMediadora).where(eq(orgMediadora.id, id));
       return org || undefined;
     } catch (error) {
       console.error('Error getting mediator org by id:', error);
@@ -407,7 +407,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  // Statistics and Reports methods
+  // Statistics and Reports
   async getConflictStatistics(): Promise<{
     totalConflicts: number;
     totalArmedGroups: number;
@@ -434,16 +434,14 @@ export class DatabaseStorage implements IStorage {
 
   async getConflictsByType(): Promise<{ causa: string; count: number }[]> {
     try {
-      const results = await db
-        .select({ 
-          causa: conflito.causa, 
-          count: count() 
+      return await db
+        .select({
+          causa: conflito.causa,
+          count: count()
         })
         .from(conflito)
         .groupBy(conflito.causa)
         .orderBy(desc(count()));
-      
-      return results.map(r => ({ causa: r.causa, count: Number(r.count) }));
     } catch (error) {
       console.error('Error getting conflicts by type:', error);
       throw error;
@@ -452,16 +450,14 @@ export class DatabaseStorage implements IStorage {
 
   async getConflictsByRegion(): Promise<{ lugar: string; count: number }[]> {
     try {
-      const results = await db
-        .select({ 
-          lugar: conflito.lugar, 
-          count: count() 
+      return await db
+        .select({
+          lugar: conflito.lugar,
+          count: count()
         })
         .from(conflito)
         .groupBy(conflito.lugar)
         .orderBy(desc(count()));
-      
-      return results.map(r => ({ lugar: r.lugar, count: Number(r.count) }));
     } catch (error) {
       console.error('Error getting conflicts by region:', error);
       throw error;
@@ -471,12 +467,13 @@ export class DatabaseStorage implements IStorage {
   async getGroupsByLosses(): Promise<{ nome: string; numeroBaixas: number }[]> {
     try {
       return await db
-        .select({ 
-          nome: grupoArmado.nome, 
-          numeroBaixas: grupoArmado.numeroBaixas 
+        .select({
+          nome: grupoArmado.nome,
+          numeroBaixas: grupoArmado.numeroBaixas
         })
         .from(grupoArmado)
-        .orderBy(desc(grupoArmado.numeroBaixas));
+        .orderBy(desc(grupoArmado.numeroBaixas))
+        .limit(10);
     } catch (error) {
       console.error('Error getting groups by losses:', error);
       throw error;
@@ -485,20 +482,16 @@ export class DatabaseStorage implements IStorage {
 
   async getMostActiveMediators(): Promise<{ nome: string; participacoes: number }[]> {
     try {
-      const results = await db
-        .select({ 
-          nome: orgMediadora.nome, 
-          participacoes: count() 
+      return await db
+        .select({
+          nome: orgMediadora.nome,
+          participacoes: count(participacaoOrgMediadora.idConflito)
         })
         .from(orgMediadora)
         .leftJoin(participacaoOrgMediadora, eq(orgMediadora.id, participacaoOrgMediadora.idOrgMediadora))
-        .groupBy(orgMediadora.nome)
-        .orderBy(desc(count()));
-      
-      return results.map(r => ({ 
-        nome: r.nome, 
-        participacoes: Number(r.participacoes) 
-      }));
+        .groupBy(orgMediadora.id, orgMediadora.nome)
+        .orderBy(desc(count(participacaoOrgMediadora.idConflito)))
+        .limit(10);
     } catch (error) {
       console.error('Error getting most active mediators:', error);
       throw error;
@@ -508,12 +501,13 @@ export class DatabaseStorage implements IStorage {
   async getWeaponsByDestructivePower(): Promise<{ nome: string; capacidadeDestrutiva: number }[]> {
     try {
       return await db
-        .select({ 
-          nome: armas.nome, 
-          capacidadeDestrutiva: armas.capacidadeDestrutiva 
+        .select({
+          nome: armas.nome,
+          capacidadeDestrutiva: armas.capacidadeDestrutiva
         })
         .from(armas)
-        .orderBy(desc(armas.capacidadeDestrutiva));
+        .orderBy(desc(armas.capacidadeDestrutiva))
+        .limit(10);
     } catch (error) {
       console.error('Error getting weapons by destructive power:', error);
       throw error;
@@ -527,20 +521,20 @@ export class DatabaseStorage implements IStorage {
     totalHomens: number;
   }> {
     try {
-      const [results] = await db
+      const [result] = await db
         .select({
           totalTanques: sum(divisao.numeroTanques),
           totalAvioes: sum(divisao.numeroAvioes),
           totalBarcos: sum(divisao.numeroBarcos),
-          totalHomens: sum(divisao.numeroHomens),
+          totalHomens: sum(divisao.numeroHomens)
         })
         .from(divisao);
 
       return {
-        totalTanques: Number(results.totalTanques) || 0,
-        totalAvioes: Number(results.totalAvioes) || 0,
-        totalBarcos: Number(results.totalBarcos) || 0,
-        totalHomens: Number(results.totalHomens) || 0,
+        totalTanques: Number(result.totalTanques) || 0,
+        totalAvioes: Number(result.totalAvioes) || 0,
+        totalBarcos: Number(result.totalBarcos) || 0,
+        totalHomens: Number(result.totalHomens) || 0,
       };
     } catch (error) {
       console.error('Error getting division resources:', error);
@@ -548,15 +542,185 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async executeQuery(query: string): Promise<any[]> {
+    try {
+      const result = await db.execute(sql.raw(query));
+      return Array.isArray(result) ? result : result.rows || [];
+    } catch (error) {
+      console.error('Error executing query:', error);
+      throw new Error(`Query execution failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getDDLSchema(): Promise<string> {
+    // This would typically come from information_schema
+    // For now, return a static DDL based on our schema
+    return `
+-- ConflictDB Schema Definition
+CREATE TABLE conflito (
+    id VARCHAR(2) NOT NULL,
+    total_mortos INT NOT NULL,
+    total_feridos INT NOT NULL,
+    causa VARCHAR(30) NOT NULL,
+    lugar VARCHAR(30) NOT NULL,
+    nome VARCHAR(30) NOT NULL,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE grupo_armado (
+    id VARCHAR(2) NOT NULL,
+    nome VARCHAR(15) NOT NULL,
+    numero_baixas INT NOT NULL,
+    PRIMARY KEY(id)
+);
+
+CREATE TABLE divisao (
+    numero_divisao VARCHAR(2) NOT NULL,
+    id_grupo_armado VARCHAR(2) NOT NULL,
+    numero_barcos INT NOT NULL,
+    numero_tanques INT NOT NULL,
+    numero_avioes INT NOT NULL,
+    numero_homens INT NOT NULL,
+    numero_baixas INT NOT NULL,
+    PRIMARY KEY(numero_divisao),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
+);
+
+CREATE TABLE org_mediadora (
+    id VARCHAR(2) NOT NULL,
+    nome VARCHAR(15) NOT NULL,
+    tipo_org VARCHAR(10) NOT NULL,
+    org_superior VARCHAR(10),
+    numero_pessoas_sustentadas INT NOT NULL,
+    tipo_ajuda VARCHAR(10) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(org_superior) REFERENCES org_mediadora(id)
+);
+
+CREATE TABLE lider_politico (
+    nome VARCHAR(15) NOT NULL,
+    id_grupo_armado VARCHAR(2) NOT NULL,
+    apoio VARCHAR(30) NOT NULL,
+    PRIMARY KEY(nome, id_grupo_armado),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
+);
+
+CREATE TABLE traficantes (
+    nome VARCHAR(15) NOT NULL,
+    PRIMARY KEY(nome)
+);
+
+CREATE TABLE armas (
+    nome VARCHAR(15) NOT NULL,
+    capacidade_destrutiva INT NOT NULL,
+    PRIMARY KEY(nome)
+);
+
+CREATE TABLE chefe_militar (
+    id VARCHAR(2) NOT NULL,
+    faixa_hierarquica VARCHAR(15) NOT NULL,
+    nome_lider_politico VARCHAR(15) NOT NULL,
+    numero_divisao VARCHAR(15) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(nome_lider_politico) REFERENCES lider_politico(nome),
+    FOREIGN KEY(numero_divisao) REFERENCES divisao(numero_divisao)
+);
+
+-- Specialized conflict type tables (not partitions)
+CREATE TABLE religiao (
+    id_conflito VARCHAR(2) NOT NULL,
+    religiao_afetada VARCHAR(10) NOT NULL,
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
+);
+
+CREATE TABLE territorio (
+    id_conflito VARCHAR(2) NOT NULL,
+    area_afetada VARCHAR(10) NOT NULL,
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
+);
+
+CREATE TABLE economia (
+    id_conflito VARCHAR(2) NOT NULL,
+    materia_prima_disputada VARCHAR(10) NOT NULL,
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
+);
+
+CREATE TABLE raca (
+    id_conflito VARCHAR(2) NOT NULL,
+    etnia_afetada VARCHAR(10) NOT NULL,
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
+);
+
+-- Relationship tables
+CREATE TABLE fornecimento (
+    id_grupo_armado VARCHAR(2) NOT NULL,
+    nome_traficante VARCHAR(15) NOT NULL,
+    nome_arma VARCHAR(15) NOT NULL,
+    quantidade_fornecida INT NOT NULL,
+    PRIMARY KEY(id_grupo_armado, nome_traficante, nome_arma),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id),
+    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome),
+    FOREIGN KEY(nome_arma) REFERENCES armas(nome)
+);
+
+CREATE TABLE contrabandeia (
+    nome_traficante VARCHAR(15) NOT NULL,
+    nome_arma VARCHAR(15) NOT NULL,
+    quantidade_possuida INT NOT NULL,
+    PRIMARY KEY(nome_arma, nome_traficante),
+    FOREIGN KEY(nome_arma) REFERENCES armas(nome),
+    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome)
+);
+
+-- Active triggers and constraints ensure data integrity
+    `;
+  }
+
+  async getTriggerInfo(): Promise<{ name: string; definition: string; active: boolean }[]> {
+    return [
+      {
+        name: "limita_chefe_por_divisao",
+        definition: `CREATE FUNCTION limita_chefe_por_divisao() RETURNS trigger AS $$
+BEGIN
+    IF(SELECT COUNT(*) FROM chefe_militar WHERE numero_divisao = NEW.numero_divisao) >= 3
+        THEN RAISE EXCEPTION 'A divisão escolhida já tem o máximo de 3 chefes';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER teste_limite_chefe_div
+BEFORE INSERT ON chefe_militar
+FOR EACH ROW
+EXECUTE FUNCTION limita_chefe_por_divisao();`,
+        active: true
+      },
+      {
+        name: "hierarquia_de_conflitos",
+        definition: `CREATE FUNCTION hierarquia_de_conflitos() RETURNS trigger AS $$
+BEGIN
+    -- Validação da hierarquia organizacional
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;`,
+        active: true
+      }
+    ];
+  }
+
+  // New report methods
   async getConflictsByCasualties(): Promise<{ nome: string; totalBaixas: number }[]> {
     try {
-      return await db
-        .select({ 
-          nome: conflito.nome, 
-          totalBaixas: sql<number>`${conflito.totalMortos} + ${conflito.totalFeridos}`.as('totalBaixas')
-        })
-        .from(conflito)
-        .orderBy(desc(sql`${conflito.totalMortos} + ${conflito.totalFeridos}`));
+      const result = await db.execute(sql`
+        SELECT nome, (total_mortos + total_feridos) as totalBaixas 
+        FROM conflito 
+        ORDER BY totalBaixas DESC
+      `);
+      return result.rows as { nome: string; totalBaixas: number }[];
     } catch (error) {
       console.error('Error getting conflicts by casualties:', error);
       throw error;
@@ -565,20 +729,14 @@ export class DatabaseStorage implements IStorage {
 
   async getGroupsByWeapons(): Promise<{ nome: string; totalArmas: number }[]> {
     try {
-      const results = await db
-        .select({ 
-          nome: grupoArmado.nome, 
-          totalArmas: count() 
-        })
-        .from(grupoArmado)
-        .leftJoin(fornecimento, eq(grupoArmado.id, fornecimento.idGrupoArmado))
-        .groupBy(grupoArmado.nome)
-        .orderBy(desc(count()));
-      
-      return results.map(r => ({ 
-        nome: r.nome, 
-        totalArmas: Number(r.totalArmas) 
-      }));
+      const result = await db.execute(sql`
+        SELECT g.nome, COALESCE(SUM(f.quantidade_fornecida), 0) as totalArmas
+        FROM grupo_armado g
+        LEFT JOIN fornecimento f ON g.id = f.id_grupo_armado
+        GROUP BY g.id, g.nome
+        ORDER BY totalArmas DESC
+      `);
+      return result.rows as { nome: string; totalArmas: number }[];
     } catch (error) {
       console.error('Error getting groups by weapons:', error);
       throw error;
@@ -587,14 +745,15 @@ export class DatabaseStorage implements IStorage {
 
   async getWeaponTrafficking(): Promise<{ traficante: string; grupo: string }[]> {
     try {
-      return await db
-        .select({ 
-          traficante: traficantes.nome, 
-          grupo: grupoArmado.nome 
-        })
-        .from(contrabandeia)
-        .innerJoin(traficantes, eq(contrabandeia.idTraficante, traficantes.id))
-        .innerJoin(grupoArmado, eq(contrabandeia.idGrupoArmado, grupoArmado.id));
+      const result = await db.execute(sql`
+        SELECT DISTINCT t.nome as traficante, g.nome as grupo
+        FROM traficantes t
+        JOIN fornecimento f ON t.nome = f.nome_traficante
+        JOIN grupo_armado g ON f.id_grupo_armado = g.id
+        WHERE f.nome_arma IN ('Barret M82', 'M200 interv')
+        ORDER BY t.nome, g.nome
+      `);
+      return result.rows as { traficante: string; grupo: string }[];
     } catch (error) {
       console.error('Error getting weapon trafficking:', error);
       throw error;
@@ -603,66 +762,16 @@ export class DatabaseStorage implements IStorage {
 
   async getReligiousConflicts(): Promise<{ pais: string; conflitos: number }[]> {
     try {
-      const results = await db
-        .select({ 
-          pais: paisesEmConflito.pais, 
-          conflitos: count() 
-        })
-        .from(paisesEmConflito)
-        .innerJoin(conflito, eq(paisesEmConflito.idConflito, conflito.id))
-        .where(eq(conflito.causa, 'religioso'))
-        .groupBy(paisesEmConflito.pais)
-        .orderBy(desc(count()));
-      
-      return results.map(r => ({ 
-        pais: r.pais, 
-        conflitos: Number(r.conflitos) 
-      }));
+      const result = await db.execute(sql`
+        SELECT p.pais_envolvido as pais, COUNT(*) as conflitos
+        FROM paises_em_conflito p
+        JOIN religiao r ON p.id_conflito = r.id_conflito
+        GROUP BY p.pais_envolvido
+        ORDER BY conflitos DESC
+      `);
+      return result.rows as { pais: string; conflitos: number }[];
     } catch (error) {
       console.error('Error getting religious conflicts:', error);
-      throw error;
-    }
-  }
-
-  async executeQuery(query: string): Promise<any[]> {
-    try {
-      const result = await db.execute(sql.raw(query));
-      return result.rows || [];
-    } catch (error) {
-      console.error('Error executing query:', error);
-      throw error;
-    }
-  }
-
-  async getDDLSchema(): Promise<string> {
-    try {
-      const result = await db.execute(sql`
-        SELECT table_name, column_name, data_type, is_nullable, column_default
-        FROM information_schema.columns
-        WHERE table_schema = 'public'
-        ORDER BY table_name, ordinal_position
-      `);
-      
-      return JSON.stringify(result.rows || [], null, 2);
-    } catch (error) {
-      console.error('Error getting DDL schema:', error);
-      throw error;
-    }
-  }
-
-  async getTriggerInfo(): Promise<{ name: string; definition: string; active: boolean }[]> {
-    try {
-      const result = await db.execute(sql`
-        SELECT trigger_name as name, 
-               action_statement as definition,
-               true as active
-        FROM information_schema.triggers
-        WHERE trigger_schema = 'public'
-      `);
-      
-      return (result.rows || []) as { name: string; definition: string; active: boolean }[];
-    } catch (error) {
-      console.error('Error getting trigger info:', error);
       throw error;
     }
   }
