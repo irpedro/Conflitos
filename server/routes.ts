@@ -196,10 +196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/military-chiefs", async (req, res) => {
     try {
       const validatedData = insertChefeMilitarSchema.parse(req.body);
-      
-      await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
-      await validators.validateDivisionExists(validatedData.numeroDivisao);
-      
+
       // Ensure id is set for creation
       let finalId = validatedData.id;
       if (!finalId) {
@@ -207,6 +204,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const maxId = chiefs.reduce((max, c) => Math.max(max, c.id), 0);
         finalId = maxId + 1;
       }
+             
+      await validators.validateUniqueMilitaryChiefId(finalId);
+      await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
+      await validators.validateDivisionExists(validatedData.numeroDivisao);
       
       const chief = await storage.createMilitaryChief({
         ...validatedData,
