@@ -45,7 +45,7 @@ CREATE TABLE org_mediadora(
     id INT NOT NULL,
     nome VARCHAR(30) NOT NULL,
     tipo_org VARCHAR(20) NOT NULL,
-    org_superior VARCHAR(10),
+    org_superior INT,
     numero_pessoas_sustentadas INT NOT NULL,
     tipo_ajuda VARCHAR(20) NOT NULL,
     PRIMARY KEY(id),
@@ -77,7 +77,7 @@ CREATE TABLE chefe_militar(
     faixa_hierarquica VARCHAR(30) NOT NULL,
     nome_lider_politico VARCHAR(30) NOT NULL,
     id_grupo_armado INT NOT NULL,
-    numero_divisao VARCHAR(15) NOT NULL,
+    numero_divisao INT NOT NULL,  -- Changed from VARCHAR(15) to INT
 
     PRIMARY KEY(id),
 
@@ -121,15 +121,15 @@ CREATE TABLE paises_em_conflito(
     id_conflito INT NOT NULL,
     pais_envolvido VARCHAR(30) NOT NULL,
     
-    PRIMARY KEY(id_conflito, pais_envolvido),  -- Chave composta permite múltiplos países por conflito
+    PRIMARY KEY(id_conflito, pais_envolvido),
     FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
 CREATE TABLE participacao_grupo_armado( 
     id_conflito INT NOT NULL,
     id_grupo_armado INT NOT NULL,
-    data_entrada VARCHAR(10) NOT NULL,
-    data_saida VARCHAR(10) NOT NULL,
+    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
+    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
 
     PRIMARY KEY(id_conflito, id_grupo_armado),
 
@@ -140,8 +140,8 @@ CREATE TABLE participacao_grupo_armado(
 CREATE TABLE participacao_org_mediadora( 
     id_conflito INT NOT NULL,
     id_org_mediadora INT NOT NULL,
-    data_entrada VARCHAR(10) NOT NULL,
-    data_saida VARCHAR(10) NOT NULL,
+    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
+    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
 
     PRIMARY KEY(id_conflito, id_org_mediadora),
 
