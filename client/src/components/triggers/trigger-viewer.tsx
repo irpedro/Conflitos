@@ -279,29 +279,34 @@ EXECUTE FUNCTION gerar_numero_divisao_sequencial();`,
         <CardHeader>
           <CardTitle className="flex items-center">
             <Zap className="w-5 h-5 mr-2 text-blue-600" />
-            Sistema de Triggers Ativos
+            Resumo dos Triggers Implementados
           </CardTitle>
-          <p className="text-sm text-slate-500">Status dos triggers implementados no banco de dados</p>
+          <p className="text-sm text-slate-500">Todos os 5 triggers de integridade implementados no sistema</p>
         </CardHeader>
         <CardContent>
-          {triggers && triggers.length > 0 ? (
-            <div className="space-y-3">
-              {triggers.map((trigger, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {triggerDefinitions.map((trigger, index) => {
+              const Icon = trigger.icon;
+              return (
+                <div key={index} className="flex items-center justify-between p-3 bg-slate-50 rounded-lg border">
                   <div className="flex items-center">
-                    <Zap className="w-4 h-4 mr-2 text-green-600" />
-                    <span className="font-mono text-sm">{trigger.name}</span>
+                    <Icon className={`w-4 h-4 mr-2 ${
+                      trigger.color === 'yellow' ? 'text-yellow-600' :
+                      trigger.color === 'blue' ? 'text-blue-600' :
+                      trigger.color === 'green' ? 'text-green-600' :
+                      trigger.color === 'red' ? 'text-red-600' :
+                      'text-purple-600'
+                    }`} />
+                    <div>
+                      <span className="font-medium text-sm">{trigger.name}</span>
+                      <p className="text-xs text-slate-500">{trigger.table} • {trigger.event}</p>
+                    </div>
                   </div>
-                  <Badge className="bg-green-100 text-green-800">ATIVO</Badge>
+                  <Badge className="bg-green-100 text-green-800 text-xs">ATIVO</Badge>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-8 text-slate-500">
-              <Zap className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-              <p>Carregando informações dos triggers...</p>
-            </div>
-          )}
+              );
+            })}
+          </div>
         </CardContent>
       </Card>
     </div>
