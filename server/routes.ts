@@ -312,6 +312,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Execute SQL endpoint for complex operations
+  app.post("/api/execute-sql", async (req, res) => {
+    try {
+      const { query } = req.body;
+      if (!query) {
+        return res.status(400).json({ error: "Query is required" });
+      }
+      
+      const result = await storage.executeQuery(query);
+      res.json({ success: true, result });
+    } catch (error) {
+      res.status(500).json({ 
+        error: "SQL execution failed", 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }
