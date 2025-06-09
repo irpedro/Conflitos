@@ -52,278 +52,393 @@ export default function SchemaViewer() {
   const sqlScripts = {
     createTables: `-- Criação das tabelas do sistema de conflitos armados
 
--- Tabela de conflitos (principal)
-CREATE TABLE conflito (
-    id SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    total_mortos INTEGER DEFAULT 0,
-    total_feridos INTEGER DEFAULT 0,
-    data_inicio DATE,
-    data_fim DATE,
-    lugar VARCHAR(255),
-    causa VARCHAR(100)
+CREATE TABLE conflito( 
+    id INT NOT NULL,
+    total_mortos INT NOT NULL,
+    total_feridos INT NOT NULL,
+    causa VARCHAR(50) NOT NULL,  
+    lugar VARCHAR(50) NOT NULL,
+    nome VARCHAR(50) NOT NULL,
+    PRIMARY KEY(id)
 );
 
--- Tabela de grupos armados
-CREATE TABLE grupo_armado (
-    id VARCHAR(50) PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    numero_baixas INTEGER DEFAULT 0,
-    ideologia VARCHAR(100),
-    lider VARCHAR(255),
-    origem VARCHAR(255)
+CREATE TABLE grupo_armado( 
+    id INT NOT NULL,
+    nome VARCHAR(30) NOT NULL,   
+    numero_baixas INT NOT NULL,
+    PRIMARY KEY(id)
 );
 
--- Tabela de divisões militares
-CREATE TABLE divisao (
-    numero_divisao SERIAL PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    numero_homens INTEGER NOT NULL,
-    numero_tanques INTEGER DEFAULT 0,
-    numero_avioes INTEGER DEFAULT 0,
-    numero_barcos INTEGER DEFAULT 0,
-    numero_baixas INTEGER DEFAULT 0,
-    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id)
+CREATE TABLE divisao( 
+    numero_divisao INT NOT NULL,   
+    id_grupo_armado INT NOT NULL,
+    numero_barcos INT NOT NULL,
+    numero_tanques INT NOT NULL,
+    numero_avioes INT NOT NULL,
+    numero_homens INT NOT NULL,
+    numero_baixas INT NOT NULL,
+
+    PRIMARY KEY(numero_divisao),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
 );
 
--- Tabela de organizações mediadoras
-CREATE TABLE org_mediadora (
-    id VARCHAR(50) PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    tipo VARCHAR(100),
-    pais_origem VARCHAR(100)
+CREATE TABLE org_mediadora(
+    id INT NOT NULL,
+    nome VARCHAR(30) NOT NULL,
+    tipo_org VARCHAR(20) NOT NULL,
+    org_superior INT,
+    numero_pessoas_sustentadas INT NOT NULL,
+    tipo_ajuda VARCHAR(20) NOT NULL,
+    PRIMARY KEY(id),
+    FOREIGN KEY(org_superior) REFERENCES org_mediadora(id)
 );
 
--- Tabela de líderes políticos
-CREATE TABLE lider_politico (
-    nome VARCHAR(255),
-    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
-    partido VARCHAR(255),
-    ideologia VARCHAR(100),
-    PRIMARY KEY (nome, id_grupo_armado)
+CREATE TABLE lider_politico( 
+    nome VARCHAR(30) NOT NULL,
+    id_grupo_armado INT NOT NULL,
+    apoio VARCHAR(50) NOT NULL,
+
+    PRIMARY KEY(nome, id_grupo_armado),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
 );
 
--- Tabela de traficantes
-CREATE TABLE traficantes (
-    nome VARCHAR(255) PRIMARY KEY,
-    nacionalidade VARCHAR(100),
-    especialidade VARCHAR(255)
+CREATE TABLE traficantes( 
+    nome VARCHAR(30) NOT NULL,
+    PRIMARY KEY(nome)
 );
 
--- Tabela de armas
-CREATE TABLE armas (
-    nome VARCHAR(255) PRIMARY KEY,
-    tipo VARCHAR(100),
-    capacidade_destrutiva INTEGER,
-    alcance_km DECIMAL(10,2),
-    origem VARCHAR(100)
+CREATE TABLE armas( 
+    nome VARCHAR(30) NOT NULL,
+    capacidade_destrutiva INT NOT NULL,
+    PRIMARY KEY(nome)
 );
 
--- Tabela de chefes militares
-CREATE TABLE chefe_militar (
-    id VARCHAR(50) PRIMARY KEY,
-    nome VARCHAR(255) NOT NULL,
-    patente VARCHAR(100),
-    anos_experiencia INTEGER,
-    numero_divisao INTEGER REFERENCES divisao(numero_divisao)
+CREATE TABLE chefe_militar( 
+    id INT NOT NULL,
+    faixa_hierarquica VARCHAR(30) NOT NULL,
+    nome_lider_politico VARCHAR(30) NOT NULL,
+    id_grupo_armado INT NOT NULL,
+    numero_divisao INT NOT NULL,
+
+    PRIMARY KEY(id),
+
+    FOREIGN KEY(nome_lider_politico, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado),
+    FOREIGN KEY(numero_divisao) REFERENCES divisao(numero_divisao)
 );
 
--- Tabelas de contexto
-CREATE TABLE religiao (
-    nome VARCHAR(255) PRIMARY KEY,
-    origem VARCHAR(100),
-    numero_seguidores BIGINT
+CREATE TABLE religiao( 
+    id_conflito INT NOT NULL,
+    religiao_afetada VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
-CREATE TABLE territorio (
-    nome VARCHAR(255) PRIMARY KEY,
-    area_km2 DECIMAL(15,2),
-    populacao BIGINT,
-    recursos_naturais TEXT
+CREATE TABLE territorio( 
+    id_conflito INT NOT NULL,
+    area_afetada VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
-CREATE TABLE economia (
-    pais VARCHAR(100) PRIMARY KEY,
-    pib_bilhoes DECIMAL(15,2),
-    pib_per_capita DECIMAL(10,2),
-    principais_exportacoes TEXT
+CREATE TABLE economia( 
+    id_conflito INT NOT NULL,
+    materia_prima_disputada VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
-CREATE TABLE raca (
-    nome VARCHAR(255) PRIMARY KEY,
-    origem VARCHAR(100),
-    populacao_estimada BIGINT
+CREATE TABLE raca( 
+    id_conflito INT NOT NULL,
+    etnia_afetada VARCHAR(10) NOT NULL,
+
+    PRIMARY KEY(id_conflito),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
--- Tabelas de relacionamento
-CREATE TABLE paises_em_conflito (
-    id_conflito INTEGER REFERENCES conflito(id),
-    pais VARCHAR(100),
-    papel VARCHAR(100),
-    PRIMARY KEY (id_conflito, pais)
+CREATE TABLE paises_em_conflito( 
+    id_conflito INT NOT NULL,
+    pais_envolvido VARCHAR(30) NOT NULL,
+    
+    PRIMARY KEY(id_conflito, pais_envolvido),
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
 );
 
-CREATE TABLE participacao_grupo_armado (
-    id_conflito INTEGER REFERENCES conflito(id),
-    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
-    data_entrada DATE,
-    papel VARCHAR(100),
-    PRIMARY KEY (id_conflito, id_grupo_armado)
+CREATE TABLE participacao_grupo_armado( 
+    id_conflito INT NOT NULL,
+    id_grupo_armado INT NOT NULL,
+    data_entrada DATE NOT NULL,
+    data_saida DATE NOT NULL,
+
+    PRIMARY KEY(id_conflito, id_grupo_armado),
+
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id),
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
 );
 
-CREATE TABLE participacao_org_mediadora (
-    id_conflito INTEGER REFERENCES conflito(id),
-    id_org_mediadora VARCHAR(50) REFERENCES org_mediadora(id),
-    data_inicio DATE,
-    tipo_mediacao VARCHAR(100),
-    PRIMARY KEY (id_conflito, id_org_mediadora)
+CREATE TABLE participacao_org_mediadora( 
+    id_conflito INT NOT NULL,
+    id_org_mediadora INT NOT NULL,
+    data_entrada DATE NOT NULL,
+    data_saida DATE NOT NULL,
+
+    PRIMARY KEY(id_conflito, id_org_mediadora),
+
+    FOREIGN KEY(id_conflito) REFERENCES conflito(id),
+    FOREIGN KEY(id_org_mediadora) REFERENCES org_mediadora(id)
 );
 
-CREATE TABLE dialogo (
-    id_conflito INTEGER REFERENCES conflito(id),
-    id_org_mediadora VARCHAR(50) REFERENCES org_mediadora(id),
-    data_dialogo DATE,
-    resultado VARCHAR(255),
-    PRIMARY KEY (id_conflito, id_org_mediadora, data_dialogo)
+CREATE TABLE dialogo( 
+    id_org_mediadora INT NOT NULL,
+    nome_lider_politico VARCHAR(30) NOT NULL,
+    id_grupo_armado INT NOT NULL,
+
+    PRIMARY KEY(id_org_mediadora, nome_lider_politico, id_grupo_armado),
+
+    FOREIGN KEY(id_org_mediadora) REFERENCES org_mediadora(id),
+    FOREIGN KEY (nome_lider_politico, id_grupo_armado) 
+        REFERENCES lider_politico(nome, id_grupo_armado)
 );
 
-CREATE TABLE lideranca (
-    nome_lider VARCHAR(255),
-    id_grupo_armado VARCHAR(50),
-    data_inicio DATE,
-    data_fim DATE,
-    PRIMARY KEY (nome_lider, id_grupo_armado, data_inicio),
-    FOREIGN KEY (nome_lider, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado)
+CREATE TABLE lideranca( 
+    id_grupo_armado INT NOT NULL,
+    nome_lider_politico VARCHAR(30) NOT NULL,
+
+    PRIMARY KEY(id_grupo_armado, nome_lider_politico),
+
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id),
+    FOREIGN KEY(nome_lider_politico, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado)
 );
 
-CREATE TABLE fornecimento (
-    nome_traficante VARCHAR(255) REFERENCES traficantes(nome),
-    nome_arma VARCHAR(255) REFERENCES armas(nome),
-    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
-    quantidade INTEGER,
-    data_fornecimento DATE,
-    PRIMARY KEY (nome_traficante, nome_arma, id_grupo_armado)
+CREATE TABLE fornecimento(
+    id_grupo_armado INT NOT NULL,
+    nome_traficante VARCHAR(30) NOT NULL,
+    nome_arma VARCHAR(30) NOT NULL,
+    quantidade_fornecida INT NOT NULL,
+
+    PRIMARY KEY(id_grupo_armado, nome_traficante, nome_arma),
+
+    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id),
+    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome),
+    FOREIGN KEY(nome_arma) REFERENCES armas(nome)
 );
 
-CREATE TABLE contrabandeia (
-    nome_traficante VARCHAR(255) REFERENCES traficantes(nome),
-    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
-    data_inicio DATE,
-    PRIMARY KEY (nome_traficante, id_grupo_armado)
-);`,
+CREATE TABLE contrabandeia(
+    nome_traficante VARCHAR(30) NOT NULL,
+    nome_arma VARCHAR(30) NOT NULL,
+    quantidade_possuida INT NOT NULL,
+
+    PRIMARY KEY(nome_arma, nome_traficante),
+
+    FOREIGN KEY(nome_arma) REFERENCES armas(nome),
+    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome)
+);
+
+-- Triggers e Restrições
+CREATE FUNCTION limita_chefe_por_divisao() RETURNS trigger AS $$
+BEGIN
+    IF(SELECT COUNT(*) FROM chefe_militar WHERE numero_divisao = NEW.numero_divisao) >= 3
+        THEN RAISE EXCEPTION 'A divisão escolhida já tem o máximo de 3 chefes';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_limite_chefe_div
+BEFORE INSERT ON chefe_militar
+FOR EACH ROW
+EXECUTE FUNCTION limita_chefe_por_divisao();
+
+CREATE FUNCTION teste_hierarquia() RETURNS trigger AS $$
+DECLARE contador INTEGER := 0;
+
+BEGIN
+    SELECT
+        (SELECT COUNT(*) FROM religiao WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM territorio WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM economia WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM raca WHERE id_conflito = NEW.id)
+    INTO contador;
+
+    IF contador != 1 
+        THEN RAISE EXCEPTION 'Conflito % deve estar em exatamente uma subclasse. Atualmente está em %.', NEW.id, contador;
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_hierarquia
+AFTER INSERT OR UPDATE ON conflito
+FOR EACH ROW
+EXECUTE FUNCTION teste_hierarquia();
+
+CREATE OR REPLACE FUNCTION atualizar_total_baixas_grupo() RETURNS TRIGGER AS $$
+
+DECLARE total INT;
+
+BEGIN
+    SELECT SUM(numero_baixas) INTO total
+    FROM divisao
+    WHERE id_grupo_armado = NEW.id_grupo_armado;
+
+    UPDATE grupo_armado
+    SET numero_baixas = COALESCE(total, 0)
+    WHERE id = NEW.id_grupo_armado;
+
+    RETURN NULL;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_atualizar_baixas
+AFTER INSERT OR UPDATE OR DELETE ON divisao
+FOR EACH ROW
+EXECUTE FUNCTION atualizar_total_baixas_grupo();`,
 
     insertData: `-- Inserção de dados nas tabelas
 
 -- Inserindo conflitos
-INSERT INTO conflito (nome, total_mortos, total_feridos, data_inicio, data_fim, lugar, causa) VALUES
-('Genocídio em Ruanda', 800000, 2000000, '1994-04-07', '1994-07-15', 'Ruanda', 'étnica'),
-('Guerra Civil Síria', 387000, 1500000, '2011-03-15', NULL, 'Síria', 'política'),
-('Conflito Israel-Palestina', 25000, 75000, '1948-05-15', NULL, 'Israel/Palestina', 'territorial'),
-('Guerra do Afeganistão', 176000, 300000, '2001-10-07', '2021-08-30', 'Afeganistão', 'terrorismo'),
-('Guerra Civil do Iêmen', 377000, 800000, '2014-09-21', NULL, 'Iêmen', 'sectária');
+INSERT INTO conflito (id, total_mortos, total_feridos, causa, lugar, nome) VALUES
+(1, 800000, 2000000, 'étnica', 'Ruanda', 'Genocídio em Ruanda'),
+(2, 387000, 1500000, 'política', 'Síria', 'Guerra Civil Síria'),
+(3, 25000, 75000, 'territorial', 'Israel/Palestina', 'Conflito Israel-Palestina'),
+(4, 176000, 300000, 'terrorismo', 'Afeganistão', 'Guerra do Afeganistão'),
+(5, 377000, 800000, 'sectária', 'Iêmen', 'Guerra Civil do Iêmen');
 
 -- Inserindo grupos armados
-INSERT INTO grupo_armado (id, nome, numero_baixas, ideologia, lider, origem) VALUES
-('FPR', 'Frente Patriótica Ruandesa', 15000, 'Tutsi', 'Paul Kagame', 'Uganda'),
-('ISIS', 'Estado Islâmico', 45000, 'Islâmica Radical', 'Abu Bakr al-Baghdadi', 'Iraque'),
-('HAMAS', 'Movimento de Resistência Islâmica', 8000, 'Nacionalista Palestina', 'Ismail Haniyeh', 'Gaza'),
-('TALIBAN', 'Movimento Islâmico do Talibã', 52000, 'Islâmica Conservadora', 'Hibatullah Akhundzada', 'Afeganistão'),
-('HOUTHIS', 'Ansar Allah', 12000, 'Xiita', 'Abdul-Malik al-Houthi', 'Iêmen');
+INSERT INTO grupo_armado (id, nome, numero_baixas) VALUES
+(1, 'Frente Patriótica Ruandesa', 15000),
+(2, 'Estado Islâmico', 45000),
+(3, 'Hamas', 8000),
+(4, 'Taliban', 52000),
+(5, 'Houthis', 12000);
 
 -- Inserindo divisões
-INSERT INTO divisao (nome, numero_homens, numero_tanques, numero_avioes, numero_barcos, numero_baixas, id_grupo_armado) VALUES
-('1ª Divisão FPR', 5000, 15, 3, 0, 2000, 'FPR'),
-('2ª Divisão FPR', 3500, 8, 1, 0, 1500, 'FPR'),
-('Brigada Al-Furqan', 8000, 25, 0, 0, 15000, 'ISIS'),
-('Brigadas Ezzedin al-Qassam', 30000, 0, 0, 2, 6000, 'HAMAS'),
-('Exército Vermelho Taliban', 60000, 12, 5, 0, 35000, 'TALIBAN'),
-('Forças Especiais Houthi', 15000, 8, 0, 3, 8000, 'HOUTHIS');
+INSERT INTO divisao (numero_divisao, id_grupo_armado, numero_barcos, numero_tanques, numero_avioes, numero_homens, numero_baixas) VALUES
+(1, 1, 0, 15, 3, 5000, 2000),
+(2, 1, 0, 8, 1, 3500, 1500),
+(3, 2, 0, 25, 0, 8000, 15000),
+(4, 3, 2, 0, 0, 30000, 6000),
+(5, 4, 0, 12, 5, 60000, 35000),
+(6, 5, 3, 8, 0, 15000, 8000);
 
 -- Inserindo organizações mediadoras
-INSERT INTO org_mediadora (id, nome, tipo, pais_origem) VALUES
-('UN', 'Organização das Nações Unidas', 'Internacional', 'Estados Unidos'),
-('AU', 'União Africana', 'Regional', 'Etiópia'),
-('LAS', 'Liga Árabe', 'Regional', 'Egito'),
-('ICRC', 'Comitê Internacional da Cruz Vermelha', 'Humanitária', 'Suíça'),
-('MSF', 'Médicos Sem Fronteiras', 'Humanitária', 'França');
+INSERT INTO org_mediadora (id, nome, tipo_org, org_superior, numero_pessoas_sustentadas, tipo_ajuda) VALUES
+(1, 'ONU', 'Internacional', NULL, 1000000, 'Humanitária'),
+(2, 'União Africana', 'Regional', 1, 500000, 'Mediação'),
+(3, 'Liga Árabe', 'Regional', 1, 300000, 'Diplomática'),
+(4, 'Cruz Vermelha', 'Humanitária', NULL, 2000000, 'Médica'),
+(5, 'MSF', 'Humanitária', 4, 800000, 'Médica');
 
 -- Inserindo líderes políticos
-INSERT INTO lider_politico (nome, id_grupo_armado, partido, ideologia) VALUES
-('Paul Kagame', 'FPR', 'Frente Patriótica Ruandesa', 'Desenvolvimentista'),
-('Abu Bakr al-Baghdadi', 'ISIS', 'Estado Islâmico', 'Jihadista'),
-('Ismail Haniyeh', 'HAMAS', 'Hamas', 'Islamista'),
-('Mullah Omar', 'TALIBAN', 'Taliban', 'Fundamentalista'),
-('Abdul-Malik al-Houthi', 'HOUTHIS', 'Ansar Allah', 'Revolucionário');
+INSERT INTO lider_politico (nome, id_grupo_armado, apoio) VALUES
+('Paul Kagame', 1, 'Uganda e comunidade internacional'),
+('Abu Bakr al-Baghdadi', 2, 'Extremistas islâmicos'),
+('Ismail Haniyeh', 3, 'Irã e Palestinos'),
+('Mullah Omar', 4, 'Tribos pashtuns'),
+('Abdul-Malik al-Houthi', 5, 'Irã e xiitas');
 
 -- Inserindo traficantes
-INSERT INTO traficantes (nome, nacionalidade, especialidade) VALUES
-('Viktor Bout', 'Russo', 'Armas pesadas e aeronaves'),
-('Monzer al-Kassar', 'Sírio', 'Armamento automático'),
-('Sarkis Soghanalian', 'Libanês', 'Equipamentos militares'),
-('Adnan Khashoggi', 'Saudita', 'Sistemas de defesa'),
-('Tamir Pardo', 'Israelense', 'Tecnologia militar');
+INSERT INTO traficantes (nome) VALUES
+('Viktor Bout'),
+('Monzer al-Kassar'),
+('Sarkis Soghanalian'),
+('Adnan Khashoggi'),
+('Tamir Pardo');
 
 -- Inserindo armas
-INSERT INTO armas (nome, tipo, capacidade_destrutiva, alcance_km, origem) VALUES
-('AK-47', 'Fuzil de Assalto', 7, 0.4, 'Rússia'),
-('RPG-7', 'Lança-granadas', 8, 0.5, 'Rússia'),
-('M16A4', 'Fuzil de Assalto', 7, 0.55, 'Estados Unidos'),
-('Katyusha', 'Sistema de Foguetes', 9, 20, 'Rússia'),
-('Qassam', 'Foguete Artesanal', 6, 10, 'Gaza');
+INSERT INTO armas (nome, capacidade_destrutiva) VALUES
+('AK-47', 7),
+('RPG-7', 8),
+('M16A4', 7),
+('Katyusha', 9),
+('Qassam', 6);
 
 -- Inserindo chefes militares
-INSERT INTO chefe_militar (id, nome, patente, anos_experiencia, numero_divisao) VALUES
-('CM001', 'General Kayumba Nyamwasa', 'General', 25, 1),
-('CM002', 'Coronel James Kabarebe', 'Coronel', 20, 2),
-('CM003', 'Abu Omar al-Shishani', 'Emir', 15, 3),
-('CM004', 'Mohammed Deif', 'Comandante', 30, 4),
-('CM005', 'Mullah Baradar', 'Mullah', 35, 5);
+INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, id_grupo_armado, numero_divisao) VALUES
+(1, 'General', 'Paul Kagame', 1, 1),
+(2, 'Coronel', 'Paul Kagame', 1, 2),
+(3, 'Emir', 'Abu Bakr al-Baghdadi', 2, 3),
+(4, 'Comandante', 'Ismail Haniyeh', 3, 4),
+(5, 'Mullah', 'Mullah Omar', 4, 5);
 
--- Inserindo religiões
-INSERT INTO religiao (nome, origem, numero_seguidores) VALUES
-('Cristianismo', 'Oriente Médio', 2400000000),
-('Islamismo', 'Arábia Saudita', 1800000000),
-('Hinduísmo', 'Índia', 1200000000),
-('Budismo', 'Índia', 500000000),
-('Judaísmo', 'Oriente Médio', 15000000);
+-- Inserindo subtipos de conflito (religioso, territorial, econômico, racial)
+INSERT INTO religiao (id_conflito, religiao_afetada) VALUES
+(2, 'Islã'),
+(4, 'Islã'),
+(5, 'Islã');
 
--- Inserindo territórios
-INSERT INTO territorio (nome, area_km2, populacao, recursos_naturais) VALUES
-('Gaza', 365, 2000000, 'Gás natural marítimo'),
-('Síria', 185180, 17500000, 'Petróleo, gás natural'),
-('Afeganistão', 652230, 38900000, 'Minerais raros, ópio'),
-('Iêmen', 527970, 29800000, 'Petróleo, gás natural'),
-('Ruanda', 26338, 12900000, 'Coltã, cassiterita');
+INSERT INTO territorio (id_conflito, area_afetada) VALUES
+(3, 'Gaza');
 
--- Inserindo economia
-INSERT INTO economia (pais, pib_bilhoes, pib_per_capita, principais_exportacoes) VALUES
-('Síria', 40.4, 2300, 'Petróleo, têxteis, algodão'),
-('Afeganistão', 19.8, 508, 'Ópio, frutas secas, tapetes'),
-('Iêmen', 21.6, 724, 'Petróleo, café, peixe'),
-('Ruanda', 10.3, 798, 'Café, chá, minerais'),
-('Israel', 395.1, 43600, 'Tecnologia, diamantes, produtos químicos');
+INSERT INTO economia (id_conflito, materia_prima_disputada) VALUES
+(5, 'Petróleo');
 
--- Inserindo raças/etnias
-INSERT INTO raca (nome, origem, populacao_estimada) VALUES
-('Tutsi', 'Grandes Lagos Africanos', 2000000),
-('Hutu', 'Grandes Lagos Africanos', 11000000),
-('Árabe', 'Península Arábica', 422000000),
-('Pashtun', 'Afeganistão', 42000000),
-('Houthi', 'Iêmen', 15000000);
+INSERT INTO raca (id_conflito, etnia_afetada) VALUES
+(1, 'Tutsi');
 
 -- Inserindo países em conflito
-INSERT INTO paises_em_conflito (id_conflito, pais, papel) VALUES
-(1, 'Ruanda', 'Principal'),
-(1, 'França', 'Intervenção'),
-(2, 'Síria', 'Principal'),
-(2, 'Rússia', 'Apoio ao governo'),
-(2, 'Estados Unidos', 'Oposição'),
-(3, 'Israel', 'Principal'),
-(3, 'Palestina', 'Principal'),
-(4, 'Afeganistão', 'Principal'),
-(4, 'Estados Unidos', 'Invasor'),
-(5, 'Iêmen', 'Principal'),
-(5, 'Arábia Saudita', 'Intervenção');`
+INSERT INTO paises_em_conflito (id_conflito, pais_envolvido) VALUES
+(1, 'Ruanda'),
+(1, 'França'),
+(2, 'Síria'),
+(2, 'Rússia'),
+(2, 'Estados Unidos'),
+(3, 'Israel'),
+(3, 'Palestina'),
+(4, 'Afeganistão'),
+(4, 'Estados Unidos'),
+(5, 'Iêmen'),
+(5, 'Arábia Saudita');
+
+-- Inserindo participação de grupos armados
+INSERT INTO participacao_grupo_armado (id_conflito, id_grupo_armado, data_entrada, data_saida) VALUES
+(1, 1, '1990-10-01', '1994-07-15'),
+(2, 2, '2013-04-08', '2019-03-23'),
+(3, 3, '1987-12-09', '2024-12-31'),
+(4, 4, '1994-09-27', '2021-08-30'),
+(5, 5, '2014-09-21', '2024-12-31');
+
+-- Inserindo participação de organizações mediadoras
+INSERT INTO participacao_org_mediadora (id_conflito, id_org_mediadora, data_entrada, data_saida) VALUES
+(1, 1, '1994-04-07', '1994-07-15'),
+(2, 1, '2011-03-15', '2024-12-31'),
+(3, 1, '1948-05-15', '2024-12-31'),
+(4, 1, '2001-10-07', '2021-08-30'),
+(5, 3, '2015-03-26', '2024-12-31');
+
+-- Inserindo diálogos
+INSERT INTO dialogo (id_org_mediadora, nome_lider_politico, id_grupo_armado) VALUES
+(1, 'Paul Kagame', 1),
+(1, 'Ismail Haniyeh', 3),
+(3, 'Abdul-Malik al-Houthi', 5);
+
+-- Inserindo liderança
+INSERT INTO lideranca (id_grupo_armado, nome_lider_politico) VALUES
+(1, 'Paul Kagame'),
+(2, 'Abu Bakr al-Baghdadi'),
+(3, 'Ismail Haniyeh'),
+(4, 'Mullah Omar'),
+(5, 'Abdul-Malik al-Houthi');
+
+-- Inserindo fornecimento de armas
+INSERT INTO fornecimento (id_grupo_armado, nome_traficante, nome_arma, quantidade_fornecida) VALUES
+(1, 'Viktor Bout', 'AK-47', 5000),
+(2, 'Monzer al-Kassar', 'AK-47', 10000),
+(3, 'Sarkis Soghanalian', 'RPG-7', 500),
+(4, 'Adnan Khashoggi', 'M16A4', 3000),
+(5, 'Viktor Bout', 'Katyusha', 200);
+
+-- Inserindo contrabando
+INSERT INTO contrabandeia (nome_traficante, nome_arma, quantidade_possuida) VALUES
+('Viktor Bout', 'AK-47', 50000),
+('Monzer al-Kassar', 'RPG-7', 2000),
+('Sarkis Soghanalian', 'M16A4', 15000),
+('Adnan Khashoggi', 'Katyusha', 800),
+('Tamir Pardo', 'Qassam', 1200);`
   };
 
   // Available tables organized by category
@@ -454,7 +569,7 @@ INSERT INTO paises_em_conflito (id_conflito, pais, papel) VALUES
 
   // Main view showing all tables with tabs
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div className="text-center">
         <h2 className="text-3xl font-bold text-gray-900 mb-4">
           Esquema do Banco de Dados
