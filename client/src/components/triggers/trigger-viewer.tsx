@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Shield, Zap, Copy, BarChart3, Database } from "lucide-react";
+import { AlertTriangle, Shield, Zap, Copy, BarChart3, Database, Users, Grid3X3 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
@@ -107,6 +107,66 @@ FOR EACH ROW
 EXECUTE FUNCTION atualizar_total_baixas_grupo();`,
       icon: BarChart3,
       color: "green"
+    },
+    {
+      name: "Mínimo de Grupos por Conflito",
+      description: "Garante que cada conflito tenha pelo menos 2 grupos armados participando",
+      table: "participacao_grupo_armado",
+      event: "AFTER INSERT OR DELETE",
+      active: true,
+      code: `CREATE FUNCTION valida_minimo_grupos_conflito() RETURNS TRIGGER AS $$
+DECLARE 
+    total_grupos INT;
+BEGIN
+    -- Conta quantos grupos participam do conflito
+    SELECT COUNT(*) INTO total_grupos
+    FROM participacao_grupo_armado
+    WHERE id_conflito = COALESCE(NEW.id_conflito, OLD.id_conflito);
+    
+    -- Se for menos que 2 grupos, impede a operação
+    IF total_grupos < 2 THEN
+        RAISE EXCEPTION 'Um conflito deve ter pelo menos 2 grupos armados participando. Atual: %', total_grupos;
+    END IF;
+    
+    RETURN COALESCE(NEW, OLD);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_minimo_grupos
+AFTER INSERT OR DELETE ON participacao_grupo_armado
+FOR EACH ROW
+EXECUTE FUNCTION valida_minimo_grupos_conflito();`,
+      icon: Users,
+      color: "red"
+    },
+    {
+      name: "Sequencialidade de Divisões",
+      description: "Gera automaticamente números sequenciais para divisões dentro de cada grupo armado",
+      table: "divisao",
+      event: "BEFORE INSERT",
+      active: true,
+      code: `CREATE FUNCTION gerar_numero_divisao_sequencial() RETURNS TRIGGER AS $$
+DECLARE 
+    proximo_numero INT;
+BEGIN
+    -- Busca o próximo número sequencial para o grupo
+    SELECT COALESCE(MAX(numero_divisao), 0) + 1 INTO proximo_numero
+    FROM divisao
+    WHERE id_grupo_armado = NEW.id_grupo_armado;
+    
+    -- Atribui o número sequencial
+    NEW.numero_divisao = proximo_numero;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_sequencia_divisao
+BEFORE INSERT ON divisao
+FOR EACH ROW
+EXECUTE FUNCTION gerar_numero_divisao_sequencial();`,
+      icon: Grid3X3,
+      color: "purple"
     }
   ];
 
