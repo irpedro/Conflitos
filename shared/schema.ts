@@ -20,7 +20,7 @@ export const grupoArmado = pgTable("grupo_armado", {
 });
 
 export const divisao = pgTable("divisao", {
-  numeroDivisao: varchar("numero_divisao", { length: 2 }).primaryKey(), // 5 → 2
+  numeroDivisao: integer("numero_divisao").primaryKey(),
   idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
   numeroBarcos: integer("numero_barcos").notNull(),
   numeroTanques: integer("numero_tanques").notNull(),
@@ -75,7 +75,7 @@ export const chefeMilitar = pgTable("chefe_militar", {
   faixaHierarquica: varchar("faixa_hierarquica", { length: 30 }).notNull(), // 15 → 30
   nomeLiderPolitico: varchar("nome_lider_politico", { length: 30 }).notNull(), // 15 → 30
   idGrupoArmado: varchar("id_grupo_armado", { length: 2 }).notNull(),
-  numeroDivisao: varchar("numero_divisao", { length: 15 }).notNull(),
+  numeroDivisao: integer("numero_divisao").notNull(),
 }, (table) => ({
   liderPoliticoFk: foreignKey({
     columns: [table.nomeLiderPolitico, table.idGrupoArmado],
