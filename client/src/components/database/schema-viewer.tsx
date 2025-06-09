@@ -4,725 +4,584 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Copy, Table, Eye, ArrowLeft, FileText, Database, Zap } from "lucide-react";
-import { Table as TableComponent, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { api } from "@/lib/api";
+import { ArrowLeft, Database, Shield, Users, Grid3X3, MapPin, BarChart3, FileText, Table2, Copy } from "lucide-react";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
-// Arquivos SQL anexados
-const sqlFiles = {
-  tabelas: `CREATE TABLE conflito( 
-    id INT NOT NULL,
-    total_mortos INT NOT NULL,
-    total_feridos INT NOT NULL,
-    causa VARCHAR(50) NOT NULL,  
-    lugar VARCHAR(50) NOT NULL,
-    nome VARCHAR(50) NOT NULL,
-    PRIMARY KEY(id)
-);
-
-CREATE TABLE grupo_armado( 
-    id INT NOT NULL,
-    nome VARCHAR(30) NOT NULL,   
-    numero_baixas INT NOT NULL,
-    PRIMARY KEY(id)
-);
-
-CREATE TABLE divisao( 
-    numero_divisao INT NOT NULL,   
-    id_grupo_armado INT NOT NULL,
-    numero_barcos INT NOT NULL,
-    numero_tanques INT NOT NULL,
-    numero_avioes INT NOT NULL,
-    numero_homens INT NOT NULL,
-    numero_baixas INT NOT NULL,
-
-    PRIMARY KEY(numero_divisao),
-    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
-);
-
-CREATE TABLE org_mediadora(
-    id INT NOT NULL,
-    nome VARCHAR(30) NOT NULL,
-    tipo_org VARCHAR(20) NOT NULL,
-    org_superior INT,
-    numero_pessoas_sustentadas INT NOT NULL,
-    tipo_ajuda VARCHAR(20) NOT NULL,
-    PRIMARY KEY(id),
-    FOREIGN KEY(org_superior) REFERENCES org_mediadora(id)
-);
-
-CREATE TABLE lider_politico( 
-    nome VARCHAR(30) NOT NULL,
-    id_grupo_armado INT NOT NULL,
-    apoio VARCHAR(50) NOT NULL,
-
-    PRIMARY KEY(nome, id_grupo_armado),
-    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
-);
-
-CREATE TABLE traficantes( 
-    nome VARCHAR(30) NOT NULL,
-    PRIMARY KEY(nome)
-);
-
-CREATE TABLE armas( 
-    nome VARCHAR(30) NOT NULL,
-    capacidade_destrutiva INT NOT NULL,
-    PRIMARY KEY(nome)
-);
-
-CREATE TABLE chefe_militar( 
-    id INT NOT NULL,
-    faixa_hierarquica VARCHAR(30) NOT NULL,
-    nome_lider_politico VARCHAR(30) NOT NULL,
-    id_grupo_armado INT NOT NULL,
-    numero_divisao INT NOT NULL,  -- Changed from VARCHAR(15) to INT
-
-    PRIMARY KEY(id),
-
-    FOREIGN KEY(nome_lider_politico, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado),
-    FOREIGN KEY(numero_divisao) REFERENCES divisao(numero_divisao)
-);
-
-CREATE TABLE religiao( 
-    id_conflito INT NOT NULL,
-    religiao_afetada VARCHAR(10) NOT NULL,
-
-    PRIMARY KEY(id_conflito),
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
-);
-
-CREATE TABLE territorio( 
-    id_conflito INT NOT NULL,
-    area_afetada VARCHAR(10) NOT NULL,
-
-    PRIMARY KEY(id_conflito),
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
-);
-
-CREATE TABLE economia( 
-    id_conflito INT NOT NULL,
-    materia_prima_disputada VARCHAR(10) NOT NULL,
-
-    PRIMARY KEY(id_conflito),
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
-);
-
-CREATE TABLE raca( 
-    id_conflito INT NOT NULL,
-    etnia_afetada VARCHAR(10) NOT NULL,
-
-    PRIMARY KEY(id_conflito),
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
-);
-
-CREATE TABLE paises_em_conflito( 
-    id_conflito INT NOT NULL,
-    pais_envolvido VARCHAR(30) NOT NULL,
-    
-    PRIMARY KEY(id_conflito, pais_envolvido),
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id)
-);
-
-CREATE TABLE participacao_grupo_armado( 
-    id_conflito INT NOT NULL,
-    id_grupo_armado INT NOT NULL,
-    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
-    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
-
-    PRIMARY KEY(id_conflito, id_grupo_armado),
-
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id),
-    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id)
-);
-
-CREATE TABLE participacao_org_mediadora( 
-    id_conflito INT NOT NULL,
-    id_org_mediadora INT NOT NULL,
-    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
-    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
-
-    PRIMARY KEY(id_conflito, id_org_mediadora),
-
-    FOREIGN KEY(id_conflito) REFERENCES conflito(id),
-    FOREIGN KEY(id_org_mediadora) REFERENCES org_mediadora(id)
-);
-
-CREATE TABLE dialogo( 
-    id_org_mediadora INT NOT NULL,
-    nome_lider_politico VARCHAR(30) NOT NULL,
-    id_grupo_armado INT NOT NULL,
-
-    PRIMARY KEY(id_org_mediadora, nome_lider_politico, id_grupo_armado),
-
-    FOREIGN KEY(id_org_mediadora) REFERENCES org_mediadora(id),
-    FOREIGN KEY (nome_lider_politico, id_grupo_armado) 
-        REFERENCES lider_politico(nome, id_grupo_armado)
-);
-
-CREATE TABLE lideranca( 
-    id_grupo_armado INT NOT NULL,
-    nome_lider_politico VARCHAR(30) NOT NULL,
-
-    PRIMARY KEY(id_grupo_armado, nome_lider_politico),
-
-    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id),
-    FOREIGN KEY(nome_lider_politico, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado)
-);
-
-CREATE TABLE fornecimento(
-    id_grupo_armado INT NOT NULL,
-    nome_traficante VARCHAR(30) NOT NULL,
-    nome_arma VARCHAR(30) NOT NULL,
-    quantidade_fornecida INT NOT NULL,
-
-    PRIMARY KEY(id_grupo_armado, nome_traficante, nome_arma),
-
-    FOREIGN KEY(id_grupo_armado) REFERENCES grupo_armado(id),
-    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome),
-    FOREIGN KEY(nome_arma) REFERENCES armas(nome)
-);
-
-CREATE TABLE contrabandeia(
-    nome_traficante VARCHAR(30) NOT NULL,
-    nome_arma VARCHAR(30) NOT NULL,
-    quantidade_possuida INT NOT NULL,
-
-    PRIMARY KEY(nome_arma, nome_traficante),
-
-    FOREIGN KEY(nome_arma) REFERENCES armas(nome),
-    FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome)
-);`,
-
-  inserts: `-- Inserção de Conflitos
-INSERT INTO conflito (id, total_mortos, total_feridos, causa, lugar, nome) VALUES
-(1, 65000, 90000, 'religioso', 'Iraque', 'Guerra sectária em Bagdá'),
-(2, 78000, 105000, 'territoria', 'Sudão', 'Conflito de fronteiras em Darfur'),
-(3, 41000, 72000, 'econômico', 'Nigéria', 'Disputa por petróleo no Delta Níger'),
-(4, 88000, 130000, 'racial', 'Ruanda', 'Genocídio entre hutus e tutsis'),
-(5, 50000, 65000, 'territoria', 'Israel', 'Conflito na Faixa de Gaza'),
-(6, 47000, 60000, 'religioso', 'Síria', 'Guerra em Homs entre seitas rivais'),
-(7, 54000, 67000, 'econômico', 'Venezuela', 'Crise humanitária por recursos'),
-(8, 60000, 80000, 'racial', 'Myanmar', 'Expulsão dos rohingyas'),
-(9, 70000, 90000, 'territoria', 'Ucrânia', 'Conflito armado na região de Donbas'),
-(10, 55000, 75000, 'religioso', 'Índia', 'Conflito entre hindus e muçulmanos');
-
--- Inserção de Grupos Armados
-INSERT INTO grupo_armado (id, nome, numero_baixas) VALUES
-(1, 'Taliban', 32000),
-(2, 'FARC', 18000),
-(3, 'Hamas', 12000),
-(4, 'Hezbollah', 15000),
-(5, 'Boko Haram', 29000),
-(6, 'ETA', 1100),
-(7, 'Al Qaeda', 25000),
-(8, 'ISIS', 34000),
-(9, 'ELN', 9000),
-(10, 'PKK', 27000);
-
--- Inserção de Divisões
-INSERT INTO divisao (numero_divisao, id_grupo_armado, numero_barcos, numero_tanques, numero_avioes, numero_homens, numero_baixas) VALUES
-(1, 1, 5, 12, 3, 2500, 850),
-(2, 1, 2, 8, 1, 1800, 600),
-(3, 2, 8, 15, 4, 3200, 1200),
-(4, 3, 3, 6, 2, 1500, 400),
-(5, 4, 6, 10, 5, 2800, 950),
-(6, 5, 4, 18, 6, 4500, 1800),
-(7, 6, 1, 2, 0, 800, 150),
-(8, 7, 7, 20, 8, 5000, 2200),
-(9, 8, 9, 25, 12, 6000, 2800),
-(10, 9, 3, 7, 2, 1200, 350);
-
--- Inserção de Organizações Mediadoras
-INSERT INTO org_mediadora (id, nome, tipo_org, org_superior, numero_pessoas_sustentadas, tipo_ajuda) VALUES
-(1, 'ONU', 'internacio', NULL, 3000, 'diplomátic'),
-(2, 'Cruz Verme', 'internacio', NULL, 2500, 'médica'),
-(3, 'OTAN', 'internacio', 1, 1500, 'presencial'),
-(4, 'Médicos SF', 'não gov.', NULL, 1200, 'médica'),
-(5, 'OEA', 'internacio', 1, 1100, 'diplomátic'),
-(6, 'UNICEF', 'internacio', 1, 800, 'médica'),
-(7, 'Comitê Nor', 'não gov.', NULL, 500, 'diplomátic'),
-(8, 'UE', 'governamen', NULL, 1000, 'presencial'),
-(9, 'Amnistia I', 'não gov.', NULL, 650, 'diplomátic'),
-(10, 'OMS', 'internacio', 1, 2000, 'médica');
-
--- Inserção de Líderes Políticos
-INSERT INTO lider_politico (nome, id_grupo_armado, apoio) VALUES
-('Hibatullah A.', 1, 'Apoio tribal e religioso'),
-('Rodrigo Londo', 2, 'Acordos regionais e populares'),
-('Ismail Haniy.', 3, 'Apoio do Hamas e de aliados'),
-('Hassan Nasral', 4, 'Apoio iraniano e político'),
-('Abubakar Shek', 5, 'Grupos extremistas locais'),
-('Arnaldo Oteg', 6, 'Base nacionalista basca'),
-('Ayman al-Zaw.', 7, 'Apoio jihadista internacional'),
-('Abu Bakr al-B', 8, 'Redes extremistas no Iraque'),
-('Antonio Garc', 9, 'Campesinato colombiano'),
-('Abdullah Öcal', 10, 'Curdos na Turquia e Síria');
-
-
--- Inserção de Traficantes
-INSERT INTO traficantes (nome) VALUES
-('Carlos Fuentes'),
-('Yuri Ivanov'),
-('Abdul Rashid'),
-('Diego Ramirez'),
-('Viktor Bolkov'),
-('Chen Wei'),
-('Ahmed Hassan'),
-('Marco Silva'),
-('Ivan Petrov'),
-('Tony Martinez');
-
--- Inserção de Armas
-INSERT INTO armas (nome, capacidade_destrutiva) VALUES
-('Barret M82', 95),
-('M200 Inter.', 93),
-('AK-47', 75),
-('M16', 70),
-('G36', 68),
-('SCAR-H', 80),
-('FN FAL', 72),
-('Galil ACE', 74),
-('Dragunov SVD', 85),
-('M4A1', 69),
-('RPG-7', 90),
-('Stinger', 91),
-('Uzi', 60),
-('MP5', 63),
-('HK416', 67);
-
--- Inserção de Conflitos Especializados
-INSERT INTO religiao (id_conflito, religiao_afetada) VALUES
-(1, 'islâmica'),
-(6, 'cristã'),
-(10, 'hindu');
-
-INSERT INTO territorio (id_conflito, area_afetada) VALUES
-(2, 'fronteira'),
-(5, 'gaza'),
-(9, 'donbas');
-
-INSERT INTO economia (id_conflito, materia_prima_disputada) VALUES
-(3, 'petróleo'),
-(7, 'ouro');
-
-INSERT INTO raca (id_conflito, etnia_afetada) VALUES
-(4, 'tutsi'),
-(8, 'rohingya');
-
--- Inserção de Países em Conflito
-INSERT INTO paises_em_conflito (id_conflito, pais_envolvido) VALUES
-(1, 'Iraque'),
-(2, 'Sudão'),
-(3, 'Nigéria'),
-(4, 'Ruanda'),
-(5, 'Israel'),
-(5, 'Palestina'),
-(6, 'Síria'),
-(7, 'Venezuela'),
-(8, 'Myanmar'),
-(9, 'Ucrânia'),
-(9, 'Rússia'),
-(10, 'Índia');
-
--- Inserção de Participação de Grupos Armados
-INSERT INTO participacao_grupo_armado (id_conflito, id_grupo_armado, data_entrada, data_saida) VALUES
-(1, 1, '2020-01-15', '2021-12-30'),
-(2, 5, '2019-03-20', '2020-11-25'),
-(3, 2, '2018-07-12', '2019-09-18'),
-(4, 8, '2017-04-08', '2018-12-20'),
-(5, 3, '2021-01-10', '2022-08-25'),
-(6, 4, '2020-09-12', '2021-11-30'),
-(7, 9, '2019-11-05', '2021-03-20'),
-(8, 7, '2018-12-15', '2020-02-28'),
-(9, 10, '2022-01-20', '2023-06-15'),
-(10, 6, '2021-05-10', '2022-07-10');
-
--- Inserção de Participação de Organizações Mediadoras
-INSERT INTO participacao_org_mediadora (id_conflito, id_org_mediadora, data_entrada, data_saida) VALUES
-(1, 1, '2020-01-15', '2021-06-30'),
-(1, 2, '2020-02-10', '2021-08-15'),
-(2, 1, '2019-03-20', '2020-12-10'),
-(2, 3, '2019-05-15', '2020-11-25'),
-(3, 2, '2018-07-12', '2019-09-18'),
-(4, 1, '2017-04-08', '2018-12-20'),
-(4, 2, '2017-06-15', '2018-10-30'),
-(4, 6, '2017-08-20', '2018-11-15'),
-(5, 1, '2021-01-10', '2022-05-25'),
-(5, 3, '2021-03-15', '2022-07-10'),
-(6, 2, '2020-09-12', '2021-11-30'),
-(7, 1, '2019-11-05', '2021-03-20'),
-(8, 6, '2018-12-15', '2020-02-28'),
-(9, 3, '2022-01-20', '2023-06-15'),
-(10, 1, '2021-05-10', '2022-08-25');
-
-
--- Inserção de Diálogos
-INSERT INTO dialogo (id_org_mediadora, nome_lider_politico, id_grupo_armado) VALUES
-(1, 'Hibatullah A.', 1),
-(1, 'Rodrigo Londo', 2),
-(2, 'Ismail Haniy.', 3),
-(3, 'Hassan Nasral', 4),
-(1, 'Abubakar Shek', 5);
-
--- Inserção de Liderança
-INSERT INTO lideranca (id_grupo_armado, nome_lider_politico) VALUES
-(1, 'Hibatullah A.'),
-(2, 'Rodrigo Londo'),
-(3, 'Ismail Haniy.'),
-(4, 'Hassan Nasral'),
-(5, 'Abubakar Shek'),
-(6, 'Arnaldo Oteg'),
-(7, 'Ayman al-Zaw.'),
-(8, 'Abu Bakr al-B'),
-(9, 'Antonio Garc'),
-(10, 'Abdullah Öcal');
-
-INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, id_grupo_armado, numero_divisao) VALUES
-(1, 'Major', 'Hibatullah A.', 1, 1),
-(2, 'Coronel', 'Hibatullah A.', 1, 1),
-(3, 'Tenente', 'Hibatullah A.', 1, 2),
-(4, 'Major', 'Rodrigo Londo', 2, 3),
-(5, 'Coronel', 'Ismail Haniy.', 3, 4),
-(6, 'Tenente', 'Hassan Nasral', 4, 5),
-(7, 'Capitão', 'Abubakar Shek', 5, 6),
-(8, 'Major', 'Arnaldo Oteg', 6, 7),
-(9, 'Coronel', 'Ayman al-Zaw.', 7, 8),
-(10, 'Tenente', 'Abu Bakr al-B', 8, 9),
-(11, 'Major', 'Antonio Garc', 9, 10),
-(12, 'Capitão', 'Abdullah Öcal', 10, 10);
--- Inserção de Fornecimento de Armas
-INSERT INTO fornecimento (id_grupo_armado, nome_traficante, nome_arma, quantidade_fornecida) VALUES
-(1, 'Carlos Fuentes', 'AK-47', 150),
-(1, 'Yuri Ivanov', 'RPG-7', 25),
-(2, 'Abdul Rashid', 'M16', 80),
-(3, 'Diego Ramirez', 'Barret M82', 10),
-(4, 'Viktor Bolkov', 'SCAR-H', 60),
-(5, 'Carlos Fuentes', 'M200 Inter.', 15),
-(6, 'Chen Wei', 'Uzi', 45),
-(7, 'Ahmed Hassan', 'Dragunov SVD', 30),
-(8, 'Marco Silva', 'HK416', 95),
-(9, 'Ivan Petrov', 'FN FAL', 70);
-
--- Inserção de Contrabando
-INSERT INTO contrabandeia (nome_traficante, nome_arma, quantidade_possuida) VALUES
-('Carlos Fuentes', 'AK-47', 500),
-('Carlos Fuentes', 'M200 Inter.', 50),
-('Yuri Ivanov', 'RPG-7', 120),
-('Abdul Rashid', 'M16', 300),
-('Diego Ramirez', 'Barret M82', 75),
-('Viktor Bolkov', 'SCAR-H', 200),
-('Chen Wei', 'Uzi', 180),
-('Ahmed Hassan', 'Dragunov SVD', 90),
-('Marco Silva', 'HK416', 250),
-('Ivan Petrov', 'FN FAL', 160);`,
-
-  restricoes: `CREATE FUNCTION limita_chefe_por_divisao() RETURNS trigger AS $$
-BEGIN
-    IF(SELECT COUNT(*) FROM chefe_militar WHERE numero_divisao = NEW.numero_divisao) >= 3
-        THEN RAISE EXCEPTION 'A divisão escolhida já tem o máximo de 3 chefes';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_limite_chefe_div
-BEFORE INSERT ON chefe_militar
-FOR EACH ROW
-EXECUTE FUNCTION limita_chefe_por_divisao();
-
---============================================================================================
-
-CREATE FUNCTION teste_hierarquia() RETURNS trigger AS $$
-DECLARE contador INTEGER := 0;
-
-BEGIN
-    SELECT
-        (SELECT COUNT(*) FROM conflito_religioso WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_territorial WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_economico WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_racial WHERE id_conflito = NEW.id)
-    INTO contador;
-
-    IF contador != 1 
-        THEN RAISE EXCEPTION 'Conflito % deve estar em exatamente uma subclasse. Atualmente está em %.', NEW.id, contador;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_hierarquia
-AFTER INSERT OR UPDATE ON conflito
-FOR EACH ROW
-EXECUTE FUNCTION teste_hierarquia();
-
---============================================================================================
-
-CREATE OR REPLACE FUNCTION atualizar_total_baixas_grupo() RETURNS TRIGGER AS $$
-
-DECLARE total INT;
-
-BEGIN
-    SELECT SUM(numero_baixas) INTO total
-    FROM divisao
-    WHERE id_grupo_armado = NEW.id_grupo_armado;
-
-    UPDATE grupo_armado
-    SET numero_baixas = COALESCE(total, 0)
-    WHERE id = NEW.id_grupo_armado;
-
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_atualizar_baixas
-AFTER INSERT OR UPDATE OR DELETE ON divisao
-FOR EACH ROW
-EXECUTE FUNCTION atualizar_total_baixas_grupo();`
-};
+interface TableData {
+  [key: string]: any;
+}
 
 export default function SchemaViewer() {
-  const { toast } = useToast();
   const [selectedTable, setSelectedTable] = useState<string | null>(null);
-  
-  const { data: ddlData } = useQuery({
-    queryKey: ["/api/schema/ddl"],
-    queryFn: () => api.getDDLSchema(),
-  });
-
-  const { data: conflicts } = useQuery({
-    queryKey: ["/api/conflicts"],
-    queryFn: () => api.getConflicts(),
-  });
-
-  const { data: armedGroups } = useQuery({
-    queryKey: ["/api/armed-groups"],
-    queryFn: () => api.getArmedGroups(),
-  });
-
-  const { data: divisions } = useQuery({
-    queryKey: ["/api/divisions"],
-    queryFn: () => api.getDivisions(),
-  });
-
-  const { data: politicalLeaders } = useQuery({
-    queryKey: ["/api/political-leaders"],
-    queryFn: () => api.getPoliticalLeaders(),
-  });
-
-  const { data: militaryChiefs } = useQuery({
-    queryKey: ["/api/military-chiefs"],
-    queryFn: () => api.getMilitaryChiefs(),
-  });
-
-  const { data: mediatorOrgs } = useQuery({
-    queryKey: ["/api/mediator-orgs"],
-    queryFn: () => api.getMediatorOrgs(),
-  });
-
-  const tables = [
-    { name: "conflicts", displayName: "Conflitos", count: conflicts?.length || 0, type: "Principal", data: conflicts },
-    { name: "groups", displayName: "Grupos Armados", count: armedGroups?.length || 0, type: "Principal", data: armedGroups },
-    { name: "divisions", displayName: "Divisões", count: divisions?.length || 0, type: "Militar", data: divisions },
-    { name: "leaders", displayName: "Líderes Políticos", count: politicalLeaders?.length || 0, type: "Político", data: politicalLeaders },
-    { name: "chiefs", displayName: "Chefes Militares", count: militaryChiefs?.length || 0, type: "Militar", data: militaryChiefs },
-    { name: "mediators", displayName: "Org. Mediadoras", count: mediatorOrgs?.length || 0, type: "Mediação", data: mediatorOrgs },
-  ];
+  const { toast } = useToast();
 
   const copyToClipboard = (text: string, name: string) => {
-    navigator.clipboard.writeText(text).then(() => {
-      toast({
-        title: "Copiado!",
-        description: `${name} copiado para a área de transferência`,
-      });
+    navigator.clipboard.writeText(text);
+    toast({
+      title: "Código copiado",
+      description: `O código SQL "${name}" foi copiado para a área de transferência.`,
     });
   };
 
-  const renderTableData = (tableName: string) => {
-    const table = tables.find(t => t.name === tableName);
-    if (!table?.data || table.data.length === 0) {
-      return <div className="text-center py-8 text-slate-500">Nenhum registro encontrado</div>;
+  // Get data for the selected table
+  const { data: tableData, isLoading, error } = useQuery<TableData[]>({
+    queryKey: [`/api/query`, selectedTable],
+    queryFn: async () => {
+      if (!selectedTable) return [];
+      
+      const response = await fetch('/api/query', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: `SELECT * FROM ${selectedTable} LIMIT 50` })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `Error querying table ${selectedTable}`);
+      }
+      
+      const result = await response.json();
+      return result.results || [];
+    },
+    enabled: !!selectedTable,
+    retry: false
+  });
+
+  // SQL Scripts for table creation and data insertion
+  const sqlScripts = {
+    createTables: `-- Criação das tabelas do sistema de conflitos armados
+
+-- Tabela de conflitos (principal)
+CREATE TABLE conflito (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    total_mortos INTEGER DEFAULT 0,
+    total_feridos INTEGER DEFAULT 0,
+    data_inicio DATE,
+    data_fim DATE,
+    lugar VARCHAR(255),
+    causa VARCHAR(100)
+);
+
+-- Tabela de grupos armados
+CREATE TABLE grupo_armado (
+    id VARCHAR(50) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    numero_baixas INTEGER DEFAULT 0,
+    ideologia VARCHAR(100),
+    lider VARCHAR(255),
+    origem VARCHAR(255)
+);
+
+-- Tabela de divisões militares
+CREATE TABLE divisao (
+    numero_divisao SERIAL PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    numero_homens INTEGER NOT NULL,
+    numero_tanques INTEGER DEFAULT 0,
+    numero_avioes INTEGER DEFAULT 0,
+    numero_barcos INTEGER DEFAULT 0,
+    numero_baixas INTEGER DEFAULT 0,
+    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id)
+);
+
+-- Tabela de organizações mediadoras
+CREATE TABLE org_mediadora (
+    id VARCHAR(50) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    tipo VARCHAR(100),
+    pais_origem VARCHAR(100)
+);
+
+-- Tabela de líderes políticos
+CREATE TABLE lider_politico (
+    nome VARCHAR(255),
+    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
+    partido VARCHAR(255),
+    ideologia VARCHAR(100),
+    PRIMARY KEY (nome, id_grupo_armado)
+);
+
+-- Tabela de traficantes
+CREATE TABLE traficantes (
+    nome VARCHAR(255) PRIMARY KEY,
+    nacionalidade VARCHAR(100),
+    especialidade VARCHAR(255)
+);
+
+-- Tabela de armas
+CREATE TABLE armas (
+    nome VARCHAR(255) PRIMARY KEY,
+    tipo VARCHAR(100),
+    capacidade_destrutiva INTEGER,
+    alcance_km DECIMAL(10,2),
+    origem VARCHAR(100)
+);
+
+-- Tabela de chefes militares
+CREATE TABLE chefe_militar (
+    id VARCHAR(50) PRIMARY KEY,
+    nome VARCHAR(255) NOT NULL,
+    patente VARCHAR(100),
+    anos_experiencia INTEGER,
+    numero_divisao INTEGER REFERENCES divisao(numero_divisao)
+);
+
+-- Tabelas de contexto
+CREATE TABLE religiao (
+    nome VARCHAR(255) PRIMARY KEY,
+    origem VARCHAR(100),
+    numero_seguidores BIGINT
+);
+
+CREATE TABLE territorio (
+    nome VARCHAR(255) PRIMARY KEY,
+    area_km2 DECIMAL(15,2),
+    populacao BIGINT,
+    recursos_naturais TEXT
+);
+
+CREATE TABLE economia (
+    pais VARCHAR(100) PRIMARY KEY,
+    pib_bilhoes DECIMAL(15,2),
+    pib_per_capita DECIMAL(10,2),
+    principais_exportacoes TEXT
+);
+
+CREATE TABLE raca (
+    nome VARCHAR(255) PRIMARY KEY,
+    origem VARCHAR(100),
+    populacao_estimada BIGINT
+);
+
+-- Tabelas de relacionamento
+CREATE TABLE paises_em_conflito (
+    id_conflito INTEGER REFERENCES conflito(id),
+    pais VARCHAR(100),
+    papel VARCHAR(100),
+    PRIMARY KEY (id_conflito, pais)
+);
+
+CREATE TABLE participacao_grupo_armado (
+    id_conflito INTEGER REFERENCES conflito(id),
+    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
+    data_entrada DATE,
+    papel VARCHAR(100),
+    PRIMARY KEY (id_conflito, id_grupo_armado)
+);
+
+CREATE TABLE participacao_org_mediadora (
+    id_conflito INTEGER REFERENCES conflito(id),
+    id_org_mediadora VARCHAR(50) REFERENCES org_mediadora(id),
+    data_inicio DATE,
+    tipo_mediacao VARCHAR(100),
+    PRIMARY KEY (id_conflito, id_org_mediadora)
+);
+
+CREATE TABLE dialogo (
+    id_conflito INTEGER REFERENCES conflito(id),
+    id_org_mediadora VARCHAR(50) REFERENCES org_mediadora(id),
+    data_dialogo DATE,
+    resultado VARCHAR(255),
+    PRIMARY KEY (id_conflito, id_org_mediadora, data_dialogo)
+);
+
+CREATE TABLE lideranca (
+    nome_lider VARCHAR(255),
+    id_grupo_armado VARCHAR(50),
+    data_inicio DATE,
+    data_fim DATE,
+    PRIMARY KEY (nome_lider, id_grupo_armado, data_inicio),
+    FOREIGN KEY (nome_lider, id_grupo_armado) REFERENCES lider_politico(nome, id_grupo_armado)
+);
+
+CREATE TABLE fornecimento (
+    nome_traficante VARCHAR(255) REFERENCES traficantes(nome),
+    nome_arma VARCHAR(255) REFERENCES armas(nome),
+    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
+    quantidade INTEGER,
+    data_fornecimento DATE,
+    PRIMARY KEY (nome_traficante, nome_arma, id_grupo_armado)
+);
+
+CREATE TABLE contrabandeia (
+    nome_traficante VARCHAR(255) REFERENCES traficantes(nome),
+    id_grupo_armado VARCHAR(50) REFERENCES grupo_armado(id),
+    data_inicio DATE,
+    PRIMARY KEY (nome_traficante, id_grupo_armado)
+);`,
+
+    insertData: `-- Inserção de dados nas tabelas
+
+-- Inserindo conflitos
+INSERT INTO conflito (nome, total_mortos, total_feridos, data_inicio, data_fim, lugar, causa) VALUES
+('Genocídio em Ruanda', 800000, 2000000, '1994-04-07', '1994-07-15', 'Ruanda', 'étnica'),
+('Guerra Civil Síria', 387000, 1500000, '2011-03-15', NULL, 'Síria', 'política'),
+('Conflito Israel-Palestina', 25000, 75000, '1948-05-15', NULL, 'Israel/Palestina', 'territorial'),
+('Guerra do Afeganistão', 176000, 300000, '2001-10-07', '2021-08-30', 'Afeganistão', 'terrorismo'),
+('Guerra Civil do Iêmen', 377000, 800000, '2014-09-21', NULL, 'Iêmen', 'sectária');
+
+-- Inserindo grupos armados
+INSERT INTO grupo_armado (id, nome, numero_baixas, ideologia, lider, origem) VALUES
+('FPR', 'Frente Patriótica Ruandesa', 15000, 'Tutsi', 'Paul Kagame', 'Uganda'),
+('ISIS', 'Estado Islâmico', 45000, 'Islâmica Radical', 'Abu Bakr al-Baghdadi', 'Iraque'),
+('HAMAS', 'Movimento de Resistência Islâmica', 8000, 'Nacionalista Palestina', 'Ismail Haniyeh', 'Gaza'),
+('TALIBAN', 'Movimento Islâmico do Talibã', 52000, 'Islâmica Conservadora', 'Hibatullah Akhundzada', 'Afeganistão'),
+('HOUTHIS', 'Ansar Allah', 12000, 'Xiita', 'Abdul-Malik al-Houthi', 'Iêmen');
+
+-- Inserindo divisões
+INSERT INTO divisao (nome, numero_homens, numero_tanques, numero_avioes, numero_barcos, numero_baixas, id_grupo_armado) VALUES
+('1ª Divisão FPR', 5000, 15, 3, 0, 2000, 'FPR'),
+('2ª Divisão FPR', 3500, 8, 1, 0, 1500, 'FPR'),
+('Brigada Al-Furqan', 8000, 25, 0, 0, 15000, 'ISIS'),
+('Brigadas Ezzedin al-Qassam', 30000, 0, 0, 2, 6000, 'HAMAS'),
+('Exército Vermelho Taliban', 60000, 12, 5, 0, 35000, 'TALIBAN'),
+('Forças Especiais Houthi', 15000, 8, 0, 3, 8000, 'HOUTHIS');
+
+-- Inserindo organizações mediadoras
+INSERT INTO org_mediadora (id, nome, tipo, pais_origem) VALUES
+('UN', 'Organização das Nações Unidas', 'Internacional', 'Estados Unidos'),
+('AU', 'União Africana', 'Regional', 'Etiópia'),
+('LAS', 'Liga Árabe', 'Regional', 'Egito'),
+('ICRC', 'Comitê Internacional da Cruz Vermelha', 'Humanitária', 'Suíça'),
+('MSF', 'Médicos Sem Fronteiras', 'Humanitária', 'França');
+
+-- Inserindo líderes políticos
+INSERT INTO lider_politico (nome, id_grupo_armado, partido, ideologia) VALUES
+('Paul Kagame', 'FPR', 'Frente Patriótica Ruandesa', 'Desenvolvimentista'),
+('Abu Bakr al-Baghdadi', 'ISIS', 'Estado Islâmico', 'Jihadista'),
+('Ismail Haniyeh', 'HAMAS', 'Hamas', 'Islamista'),
+('Mullah Omar', 'TALIBAN', 'Taliban', 'Fundamentalista'),
+('Abdul-Malik al-Houthi', 'HOUTHIS', 'Ansar Allah', 'Revolucionário');
+
+-- Inserindo traficantes
+INSERT INTO traficantes (nome, nacionalidade, especialidade) VALUES
+('Viktor Bout', 'Russo', 'Armas pesadas e aeronaves'),
+('Monzer al-Kassar', 'Sírio', 'Armamento automático'),
+('Sarkis Soghanalian', 'Libanês', 'Equipamentos militares'),
+('Adnan Khashoggi', 'Saudita', 'Sistemas de defesa'),
+('Tamir Pardo', 'Israelense', 'Tecnologia militar');
+
+-- Inserindo armas
+INSERT INTO armas (nome, tipo, capacidade_destrutiva, alcance_km, origem) VALUES
+('AK-47', 'Fuzil de Assalto', 7, 0.4, 'Rússia'),
+('RPG-7', 'Lança-granadas', 8, 0.5, 'Rússia'),
+('M16A4', 'Fuzil de Assalto', 7, 0.55, 'Estados Unidos'),
+('Katyusha', 'Sistema de Foguetes', 9, 20, 'Rússia'),
+('Qassam', 'Foguete Artesanal', 6, 10, 'Gaza');
+
+-- Inserindo chefes militares
+INSERT INTO chefe_militar (id, nome, patente, anos_experiencia, numero_divisao) VALUES
+('CM001', 'General Kayumba Nyamwasa', 'General', 25, 1),
+('CM002', 'Coronel James Kabarebe', 'Coronel', 20, 2),
+('CM003', 'Abu Omar al-Shishani', 'Emir', 15, 3),
+('CM004', 'Mohammed Deif', 'Comandante', 30, 4),
+('CM005', 'Mullah Baradar', 'Mullah', 35, 5);
+
+-- Inserindo religiões
+INSERT INTO religiao (nome, origem, numero_seguidores) VALUES
+('Cristianismo', 'Oriente Médio', 2400000000),
+('Islamismo', 'Arábia Saudita', 1800000000),
+('Hinduísmo', 'Índia', 1200000000),
+('Budismo', 'Índia', 500000000),
+('Judaísmo', 'Oriente Médio', 15000000);
+
+-- Inserindo territórios
+INSERT INTO territorio (nome, area_km2, populacao, recursos_naturais) VALUES
+('Gaza', 365, 2000000, 'Gás natural marítimo'),
+('Síria', 185180, 17500000, 'Petróleo, gás natural'),
+('Afeganistão', 652230, 38900000, 'Minerais raros, ópio'),
+('Iêmen', 527970, 29800000, 'Petróleo, gás natural'),
+('Ruanda', 26338, 12900000, 'Coltã, cassiterita');
+
+-- Inserindo economia
+INSERT INTO economia (pais, pib_bilhoes, pib_per_capita, principais_exportacoes) VALUES
+('Síria', 40.4, 2300, 'Petróleo, têxteis, algodão'),
+('Afeganistão', 19.8, 508, 'Ópio, frutas secas, tapetes'),
+('Iêmen', 21.6, 724, 'Petróleo, café, peixe'),
+('Ruanda', 10.3, 798, 'Café, chá, minerais'),
+('Israel', 395.1, 43600, 'Tecnologia, diamantes, produtos químicos');
+
+-- Inserindo raças/etnias
+INSERT INTO raca (nome, origem, populacao_estimada) VALUES
+('Tutsi', 'Grandes Lagos Africanos', 2000000),
+('Hutu', 'Grandes Lagos Africanos', 11000000),
+('Árabe', 'Península Arábica', 422000000),
+('Pashtun', 'Afeganistão', 42000000),
+('Houthi', 'Iêmen', 15000000);
+
+-- Inserindo países em conflito
+INSERT INTO paises_em_conflito (id_conflito, pais, papel) VALUES
+(1, 'Ruanda', 'Principal'),
+(1, 'França', 'Intervenção'),
+(2, 'Síria', 'Principal'),
+(2, 'Rússia', 'Apoio ao governo'),
+(2, 'Estados Unidos', 'Oposição'),
+(3, 'Israel', 'Principal'),
+(3, 'Palestina', 'Principal'),
+(4, 'Afeganistão', 'Principal'),
+(4, 'Estados Unidos', 'Invasor'),
+(5, 'Iêmen', 'Principal'),
+(5, 'Arábia Saudita', 'Intervenção');`
+  };
+
+  // Available tables organized by category
+  const tableCategories = {
+    principais: [
+      { name: "conflito", displayName: "Conflitos", icon: Shield, description: "Registros de conflitos armados" },
+      { name: "grupo_armado", displayName: "Grupos Armados", icon: Users, description: "Organizações militares" },
+      { name: "divisao", displayName: "Divisões", icon: Grid3X3, description: "Unidades militares" },
+      { name: "org_mediadora", displayName: "Organizações Mediadoras", icon: Shield, description: "Entidades de mediação" }
+    ],
+    pessoal: [
+      { name: "lider_politico", displayName: "Líderes Políticos", icon: Users, description: "Liderança política" },
+      { name: "chefe_militar", displayName: "Chefes Militares", icon: Shield, description: "Comando militar" },
+      { name: "traficantes", displayName: "Traficantes", icon: Users, description: "Traficantes de armas" }
+    ],
+    recursos: [
+      { name: "armas", displayName: "Armas", icon: Shield, description: "Arsenal disponível" },
+      { name: "territorio", displayName: "Territórios", icon: MapPin, description: "Áreas geográficas" },
+      { name: "economia", displayName: "Economia", icon: BarChart3, description: "Dados econômicos" },
+      { name: "religiao", displayName: "Religiões", icon: Database, description: "Aspectos religiosos" },
+      { name: "raca", displayName: "Grupos Étnicos", icon: Users, description: "Diversidade étnica" }
+    ],
+    relacionamentos: [
+      { name: "paises_em_conflito", displayName: "Países em Conflito", icon: MapPin, description: "Relação países-conflitos" },
+      { name: "participacao_grupo_armado", displayName: "Participação Grupos", icon: Shield, description: "Grupos em conflitos" },
+      { name: "participacao_org_mediadora", displayName: "Participação Mediadores", icon: Users, description: "Organizações em mediações" },
+      { name: "dialogo", displayName: "Diálogos", icon: Users, description: "Negociações" },
+      { name: "lideranca", displayName: "Liderança", icon: Users, description: "Relação líderes-grupos" },
+      { name: "fornecimento", displayName: "Fornecimento", icon: Shield, description: "Suprimento de armas" },
+      { name: "contrabandeia", displayName: "Contrabando", icon: Shield, description: "Atividades de contrabando" }
+    ]
+  };
+
+  // Render table data
+  const renderTableData = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 ml-4">Carregando dados...</p>
+        </div>
+      );
     }
 
-    const columns = Object.keys(table.data[0]);
-    
+    if (error) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <div className="text-center">
+            <p className="text-red-600 mb-2">Erro ao carregar dados:</p>
+            <p className="text-sm text-gray-600">{error.message}</p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!tableData || tableData.length === 0) {
+      return (
+        <div className="flex items-center justify-center py-8">
+          <p className="text-gray-600">Nenhum dado encontrado para esta tabela.</p>
+        </div>
+      );
+    }
+
+    const columns = Object.keys(tableData[0]);
+
     return (
-      <TableComponent>
-        <TableHeader>
-          <TableRow>
-            {columns.map((column) => (
-              <TableHead key={column} className="font-medium text-slate-600 uppercase text-xs tracking-wider">
-                {column}
-              </TableHead>
-            ))}
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {table.data.slice(0, 10).map((row: any, index: number) => (
-            <TableRow key={index}>
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
               {columns.map((column) => (
-                <TableCell key={column} className="text-sm">
-                  {row[column]?.toString() || ''}
-                </TableCell>
+                <TableHead key={column} className="font-semibold">
+                  {column}
+                </TableHead>
               ))}
             </TableRow>
-          ))}
-        </TableBody>
-      </TableComponent>
+          </TableHeader>
+          <TableBody>
+            {tableData.map((row, index) => (
+              <TableRow key={index}>
+                {columns.map((column) => (
+                  <TableCell key={column} className="max-w-xs truncate">
+                    {row[column] !== null && row[column] !== undefined ? String(row[column]) : '-'}
+                  </TableCell>
+                ))}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
     );
   };
 
+  // If a table is selected, show its data
   if (selectedTable) {
-    const table = tables.find(t => t.name === selectedTable);
     return (
-      <div className="p-6">
-        <Card className="fade-in">
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button 
+            variant="ghost" 
+            onClick={() => setSelectedTable(null)}
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar
+          </Button>
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Tabela: {selectedTable}
+            </h2>
+            <p className="text-gray-600">
+              Dados da tabela selecionada
+            </p>
+          </div>
+        </div>
+
+        <Card>
           <CardHeader>
-            <div className="flex items-center space-x-4">
-              <Button onClick={() => setSelectedTable(null)} variant="outline" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Voltar
-              </Button>
-              <div>
-                <CardTitle>{table?.displayName}</CardTitle>
-                <p className="text-sm text-slate-500">Visualizando {table?.count} registros</p>
-              </div>
-            </div>
+            <CardTitle>Dados da Tabela</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              {renderTableData(selectedTable)}
-            </div>
+            {renderTableData()}
           </CardContent>
         </Card>
       </div>
     );
   }
 
+  // Main view showing all tables with tabs
   return (
-    <div className="p-6">
+    <div className="space-y-6">
+      <div className="text-center">
+        <h2 className="text-3xl font-bold text-gray-900 mb-4">
+          Esquema do Banco de Dados
+        </h2>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Explore as tabelas do sistema de conflitos armados e visualize os códigos SQL.
+        </p>
+      </div>
+
       <Tabs defaultValue="current" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="current" className="flex items-center gap-2">
             <Database className="w-4 h-4" />
             Esquema Atual
           </TabsTrigger>
-          <TabsTrigger value="tabelas" className="flex items-center gap-2">
+          <TabsTrigger value="create" className="flex items-center gap-2">
             <FileText className="w-4 h-4" />
-            Criação Tabelas
+            Criação de Tabelas
           </TabsTrigger>
-          <TabsTrigger value="inserts" className="flex items-center gap-2">
-            <Table className="w-4 h-4" />
-            Inserção Dados
-          </TabsTrigger>
-          <TabsTrigger value="restricoes" className="flex items-center gap-2">
-            <Zap className="w-4 h-4" />
-            Triggers/Restrições
+          <TabsTrigger value="insert" className="flex items-center gap-2">
+            <Table2 className="w-4 h-4" />
+            Inserção de Dados
           </TabsTrigger>
         </TabsList>
 
         <TabsContent value="current" className="mt-6">
+          <div className="space-y-8">
+            {Object.entries(tableCategories).map(([category, tables]) => (
+              <div key={category} className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-800 capitalize flex items-center gap-2">
+                  <Database className="h-5 w-5" />
+                  {category === 'principais' ? 'Tabelas Principais' :
+                   category === 'pessoal' ? 'Pessoal' :
+                   category === 'recursos' ? 'Recursos' :
+                   'Relacionamentos'}
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {tables.map((table) => {
+                    const IconComponent = table.icon;
+                    return (
+                      <Card 
+                        key={table.name} 
+                        className="cursor-pointer hover:shadow-lg transition-all duration-200 border-2 hover:border-blue-300"
+                        onClick={() => setSelectedTable(table.name)}
+                      >
+                        <CardHeader className="pb-3">
+                          <div className="flex items-center justify-between">
+                            <CardTitle className="text-base flex items-center gap-2">
+                              <IconComponent className="h-4 w-4 text-blue-600" />
+                              {table.displayName}
+                            </CardTitle>
+                          </div>
+                        </CardHeader>
+                        <CardContent className="pt-0">
+                          <p className="text-sm text-gray-600 leading-relaxed mb-3">
+                            {table.description}
+                          </p>
+                          <Badge variant="outline" className="text-xs">
+                            {table.name}
+                          </Badge>
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="create" className="mt-6">
           <Card className="fade-in">
             <CardHeader>
-              <CardTitle>Tabelas do Sistema</CardTitle>
-              <p className="text-sm text-slate-500">Clique para visualizar dados</p>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Script de Criação de Tabelas
+                  </CardTitle>
+                  <p className="text-sm text-slate-500 mt-1">SQL completo para criação do esquema do banco de dados</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(sqlScripts.createTables, 'Script de Criação')}
+                >
+                  <Copy className="w-4 h-4 mr-2" />
+                  Copiar Script
+                </Button>
+              </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
-                {tables.map((table) => (
-                  <div
-                    key={table.name}
-                    className="flex items-center justify-between p-3 border border-slate-200 rounded-lg cursor-pointer hover:bg-slate-50 transition-colors"
-                    onClick={() => setSelectedTable(table.name)}
-                  >
-                    <div>
-                      <div className="font-medium text-slate-800">{table.displayName}</div>
-                      <div className="text-sm text-slate-500">{table.count} registros</div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <Badge variant="secondary">{table.type}</Badge>
-                      <Eye className="w-4 h-4 text-slate-400" />
-                    </div>
-                  </div>
-                ))}
+              <div className="bg-slate-900 rounded-lg p-4 overflow-auto max-h-96">
+                <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
+                  <code>{sqlScripts.createTables}</code>
+                </pre>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="tabelas" className="mt-6">
+        <TabsContent value="insert" className="mt-6">
           <Card className="fade-in">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="w-5 h-5" />
-                Criação das Tabelas (DDL)
-              </CardTitle>
-              <p className="text-sm text-slate-500">Script SQL para criação das tabelas do sistema</p>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-slate-900 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-green-400 text-sm font-mono">
-                  <code>{sqlFiles.tabelas}</code>
-                </pre>
-              </div>
-              <div className="mt-4">
-                <Button onClick={() => copyToClipboard(sqlFiles.tabelas, 'Script de Criação')} variant="outline" size="sm">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Table2 className="w-5 h-5" />
+                    Script de Inserção de Dados
+                  </CardTitle>
+                  <p className="text-sm text-slate-500 mt-1">SQL completo para inserção dos dados de exemplo</p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => copyToClipboard(sqlScripts.insertData, 'Script de Inserção')}
+                >
                   <Copy className="w-4 h-4 mr-2" />
                   Copiar Script
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="inserts" className="mt-6">
-          <Card className="fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Table className="w-5 h-5" />
-                Inserção de Dados (DML)
-              </CardTitle>
-              <p className="text-sm text-slate-500">Script SQL para população inicial do banco</p>
             </CardHeader>
             <CardContent>
               <div className="bg-slate-900 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-green-400 text-sm font-mono">
-                  <code>{sqlFiles.inserts}</code>
+                <pre className="text-green-400 text-sm font-mono whitespace-pre-wrap">
+                  <code>{sqlScripts.insertData}</code>
                 </pre>
-              </div>
-              <div className="mt-4">
-                <Button onClick={() => copyToClipboard(sqlFiles.inserts, 'Script de Inserção')} variant="outline" size="sm">
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Script
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="restricoes" className="mt-6">
-          <Card className="fade-in">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Zap className="w-5 h-5" />
-                Triggers e Restrições
-              </CardTitle>
-              <p className="text-sm text-slate-500">Funções, triggers e validações do sistema</p>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-slate-900 rounded-lg p-4 overflow-auto max-h-96">
-                <pre className="text-green-400 text-sm font-mono">
-                  <code>{sqlFiles.restricoes}</code>
-                </pre>
-              </div>
-              <div className="mt-4">
-                <Button onClick={() => copyToClipboard(sqlFiles.restricoes, 'Script de Triggers')} variant="outline" size="sm">
-                  <Copy className="w-4 h-4 mr-2" />
-                  Copiar Script
-                </Button>
               </div>
             </CardContent>
           </Card>
