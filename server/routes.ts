@@ -35,7 +35,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Ensure id is set for creation
       if (!validatedData.id) {
-        // Generate a new ID or let the database handle it
         const conflicts = await storage.getAllConflicts();
         const maxId = conflicts.reduce((max, c) => Math.max(max, c.id), 0);
         validatedData.id = maxId + 1;
@@ -132,15 +131,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const validatedData = insertDivisaoSchema.parse(req.body);
       
-            // Check if division number already exists
-      const existingDivision = await storage.getDivisionById(validatedData.numeroDivisao);
-      if (existingDivision) {
-        return res.status(400).json({ 
-          error: "Duplicate ID", 
-          details: "A division with this number already exists" 
-        });
-      }
-             
+      // Check if division number already exists with detailed message
+      await validators.validateUniqueDivisionNumber(validatedData.numeroDivisao);
       await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
       
       const division = await storage.createDivision(validatedData);
@@ -206,7 +198,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
              
       await validators.validateUniqueMilitaryChiefId(finalId);
-      await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
       await validators.validateDivisionExists(validatedData.numeroDivisao);
       
       const chief = await storage.createMilitaryChief({
