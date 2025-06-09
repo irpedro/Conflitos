@@ -8,6 +8,15 @@ export class ValidationError extends Error {
 }
 
 export const validators = {
+  
+  async validateUniqueMilitaryChiefId(id: number): Promise<void> {
+    const chiefs = await storage.getAllMilitaryChiefs();
+    const existing = chiefs.find(chief => chief.id === id);
+    if (existing) {
+      throw new ValidationError("Duplicate ID", "A military chief with this ID already exists");
+    }
+  },
+  
   async validateArmedGroupExists(id: number): Promise<void> {
     const group = await storage.getArmedGroupById(id.toString());
     if (!group) {
