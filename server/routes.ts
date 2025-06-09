@@ -206,7 +206,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const chiefs = await storage.getAllMilitaryChiefs();
         const maxId = chiefs.reduce((max, c) => Math.max(max, c.id), 0);
         finalId = maxId + 1;
+      } else {
+      // ADIÇÃO: Verificar se ID já existe
+      const chiefs = await storage.getAllMilitaryChiefs();
+      const existingChief = chiefs.find(chief => chief.id === validatedData.id);
+      if (existingChief) {
+        return res.status(400).json({ 
+          error: "Military chief already exists", 
+          details: `A military chief with ID ${validatedData.id} already exists.`
+        });
       }
+    }
       
       const chief = await storage.createMilitaryChief({
         ...validatedData,
