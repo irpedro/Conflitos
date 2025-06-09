@@ -4,6 +4,7 @@ import { storage } from "./storage";
 import { insertConflitoSchema, insertGrupoArmadoSchema, insertDivisaoSchema, 
          insertLiderPoliticoSchema, insertChefeMilitarSchema } from "@shared/schema";
 import { z } from "zod";
+import { validators, handleValidationError } from "./validation";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Conflicts endpoints
@@ -31,13 +32,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/conflicts", async (req, res) => {
     try {
       const validatedData = insertConflitoSchema.parse(req.body);
-      const conflict = await storage.createConflict(validatedData);
+      
+      // Ensure id is set for creation
+      if (!validatedData.id) {
+        // Generate a new ID or let the database handle it
+        const conflicts = await storage.getAllConflicts();
+        const maxId = conflicts.reduce((max, c) => Math.max(max, c.id), 0);
+        validatedData.id = maxId + 1;
+      } else {
+        await validators.validateUniqueConflictId(validatedData.id);
+      }
+      
+      const conflict = await storage.createConflict({
+        ...validatedData,
+        id: validatedData.id!
+      });
       res.status(201).json(conflict);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create conflict" });
+      
+      const errorResponse = handleValidationError(error);
+      return res.status(errorResponse.status).json(errorResponse.body);
     }
   });
 
@@ -76,13 +93,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/armed-groups", async (req, res) => {
     try {
       const validatedData = insertGrupoArmadoSchema.parse(req.body);
-      const group = await storage.createArmedGroup(validatedData);
+      
+      // Ensure id is set for creation
+      if (!validatedData.id) {
+        const groups = await storage.getAllArmedGroups();
+        const maxId = groups.reduce((max, g) => Math.max(max, g.id), 0);
+        validatedData.id = maxId + 1;
+      } else {
+        await validators.validateUniqueArmedGroupId(validatedData.id);
+      }
+      
+      const group = await storage.createArmedGroup({
+        ...validatedData,
+        id: validatedData.id!
+      });
       res.status(201).json(group);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create armed group" });
+      
+      const errorResponse = handleValidationError(error);
+      return res.status(errorResponse.status).json(errorResponse.body);
     }
   });
 
@@ -99,13 +131,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/divisions", async (req, res) => {
     try {
       const validatedData = insertDivisaoSchema.parse(req.body);
+      
+      await validators.validateUniqueDivisionNumber(validatedData.numeroDivisao);
+      await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
+      
       const division = await storage.createDivision(validatedData);
       res.status(201).json(division);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create division" });
+      
+      const errorResponse = handleValidationError(error);
+      return res.status(errorResponse.status).json(errorResponse.body);
     }
   });
 
@@ -122,13 +160,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/political-leaders", async (req, res) => {
     try {
       const validatedData = insertLiderPoliticoSchema.parse(req.body);
+      
+      await validators.validateArmedGroupExists(validatedData.idGrupoArmado);
+      
       const leader = await storage.createPoliticalLeader(validatedData);
       res.status(201).json(leader);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create political leader" });
+      
+      const errorResponse = handleValidationError(error);
+      return res.status(errorResponse.status).json(errorResponse.body);
     }
   });
 
@@ -145,13 +188,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/military-chiefs", async (req, res) => {
     try {
       const validatedData = insertChefeMilitarSchema.parse(req.body);
-      const chief = await storage.createMilitaryChief(validatedData);
+      
+      await validators.validatePoliticalLeaderExists(validatedData.nomeLiderPolitico, validatedData.idGrupoArmado);
+      await validators.validateDivisionExists(validatedData.numeroDivisao);
+      
+      // Ensure id is set for creation
+      let finalId = validatedData.id;
+      if (!finalId) {
+        const chiefs = await storage.getAllMilitaryChiefs();
+        const maxId = chiefs.reduce((max, c) => Math.max(max, c.id), 0);
+        finalId = maxId + 1;
+      }
+      
+      const chief = await storage.createMilitaryChief({
+        ...validatedData,
+        id: finalId
+      });
       res.status(201).json(chief);
     } catch (error) {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid data", details: error.errors });
       }
-      res.status(500).json({ error: "Failed to create military chief" });
+      
+      const errorResponse = handleValidationError(error);
+      return res.status(errorResponse.status).json(errorResponse.body);
     }
   });
 
