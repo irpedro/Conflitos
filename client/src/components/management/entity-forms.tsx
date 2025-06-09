@@ -9,6 +9,28 @@ import { Label } from "@/components/ui/label";
 import { Plus, Users, Shield, Crown, Star, Loader2, Layers } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+// Define tipos locais para resolver problemas de importação
+type GrupoArmado = {
+  id: number;
+  nome: string;
+  numeroBaixas: number;
+};
+
+type LiderPolitico = {
+  nome: string;
+  idGrupoArmado: number;
+  apoio: string;
+};
+
+type Divisao = {
+  numeroDivisao: number;
+  idGrupoArmado: number;
+  numeroBarcos: number;
+  numeroTanques: number;
+  numeroAvioes: number;
+  numeroHomens: number;
+  numeroBaixas: number;
+};
 
 export default function EntityForms() {
   const queryClient = useQueryClient();
@@ -154,27 +176,52 @@ export default function EntityForms() {
 
   const handleSubmitConflict = (e: React.FormEvent) => {
     e.preventDefault();
-    createConflictMutation.mutate(conflictForm);
+    const formData = {
+      ...conflictForm,
+      id: parseInt(conflictForm.id)
+    };
+    createConflictMutation.mutate(formData);
   };
 
   const handleSubmitGroup = (e: React.FormEvent) => {
     e.preventDefault();
-    createGroupMutation.mutate(groupForm);
+    const formData = {
+      ...groupForm,
+      id: parseInt(groupForm.id)
+    };
+    createGroupMutation.mutate(formData);
   };
 
   const handleSubmitLeader = (e: React.FormEvent) => {
     e.preventDefault();
-    createLeaderMutation.mutate(leaderForm);
+    const formData = {
+      ...leaderForm,
+      idGrupoArmado: parseInt(leaderForm.idGrupoArmado)
+    };
+    createLeaderMutation.mutate(formData);
   };
 
   const handleSubmitChief = (e: React.FormEvent) => {
     e.preventDefault();
-    createChiefMutation.mutate(chiefForm);
+    // Find the selected leader to get the group ID
+    const selectedLeader = politicalLeaders?.find(leader => leader.nome === chiefForm.nomeLiderPolitico);
+    const formData = {
+      ...chiefForm,
+      id: parseInt(chiefForm.id),
+      idGrupoArmado: selectedLeader?.idGrupoArmado || 0,
+      numeroDivisao: parseInt(chiefForm.numeroDivisao)
+    };
+    createChiefMutation.mutate(formData);
   };
 
   const handleSubmitDivision = (e: React.FormEvent) => {
     e.preventDefault();
-    createDivisionMutation.mutate(divisionForm);
+    const formData = {
+      ...divisionForm,
+      numeroDivisao: parseInt(divisionForm.numeroDivisao),
+      idGrupoArmado: parseInt(divisionForm.idGrupoArmado)
+    };
+    createDivisionMutation.mutate(formData);
   };
 
   return (
@@ -348,8 +395,8 @@ export default function EntityForms() {
                     <SelectValue placeholder="Selecione um grupo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {armedGroups?.map((group) => (
-                      <SelectItem key={group.id} value={group.id}>
+                    {armedGroups?.map((group: GrupoArmado) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
                         {group.nome}
                       </SelectItem>
                     ))}
@@ -421,7 +468,7 @@ export default function EntityForms() {
                     <SelectValue placeholder="Selecione um líder" />
                   </SelectTrigger>
                   <SelectContent>
-                    {politicalLeaders?.map((leader) => (
+                    {politicalLeaders?.map((leader: LiderPolitico) => (
                       <SelectItem key={leader.nome} value={leader.nome}>
                         {leader.nome}
                       </SelectItem>
@@ -436,8 +483,8 @@ export default function EntityForms() {
                     <SelectValue placeholder="Selecione uma divisão" />
                   </SelectTrigger>
                   <SelectContent>
-                    {divisions?.map((division) => (
-                      <SelectItem key={division.numeroDivisao} value={division.numeroDivisao}>
+                    {divisions?.map((division: Divisao) => (
+                      <SelectItem key={division.numeroDivisao} value={division.numeroDivisao.toString()}>
                         Divisão {division.numeroDivisao}
                       </SelectItem>
                     ))}
@@ -484,8 +531,8 @@ export default function EntityForms() {
                     <SelectValue placeholder="Selecione um grupo" />
                   </SelectTrigger>
                   <SelectContent>
-                    {armedGroups?.map((group: any) => (
-                      <SelectItem key={group.id} value={group.id}>
+                    {armedGroups?.map((group: GrupoArmado) => (
+                      <SelectItem key={group.id} value={group.id.toString()}>
                         {group.nome}
                       </SelectItem>
                     ))}
