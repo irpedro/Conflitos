@@ -52,15 +52,15 @@ EXECUTE FUNCTION limita_chefe_por_divisao();`,
       table: "conflito",
       event: "AFTER INSERT OR UPDATE",
       active: true,
-      code: `CREATE FUNCTION teste_hierarquia() RETURNS trigger AS $$
-DECLARE contador INTEGER := 0;
-
+      code: `CREATE OR REPLACE FUNCTION teste_hierarquia() RETURNS TRIGGER AS $$
+DECLARE 
+    contador INTEGER := 0;
 BEGIN
     SELECT
-        (SELECT COUNT(*) FROM conflito_religioso WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_territorial WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_economico WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM conflito_racial WHERE id_conflito = NEW.id)
+        (SELECT COUNT(*) FROM religiao WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM territorio WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM economia WHERE id_conflito = NEW.id) +
+        (SELECT COUNT(*) FROM raca WHERE id_conflito = NEW.id)
     INTO contador;
 
     IF contador != 1 
@@ -71,10 +71,12 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_hierarquia
-AFTER INSERT OR UPDATE ON conflito
-FOR EACH ROW
-EXECUTE FUNCTION teste_hierarquia();`,
+-- Trigger para validar hierarquia
+DROP TRIGGER IF EXISTS trg_teste_hierarquia ON conflito;
+CREATE TRIGGER trg_teste_hierarquia
+    BEFORE INSERT OR UPDATE ON conflito
+    FOR EACH ROW
+    EXECUTE FUNCTION teste_hierarquia();`,
       icon: Shield,
       color: "blue"
     },
