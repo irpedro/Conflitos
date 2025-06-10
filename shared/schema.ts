@@ -304,7 +304,7 @@ export const insertGrupoArmadoSchema = createInsertSchema(grupoArmado).extend({
 });
 
 export const insertDivisaoSchema = createInsertSchema(divisao).extend({
-  numeroDivisao: numberFromString,
+  numeroDivisao: optionalNumberFromString,
   idGrupoArmado: numberFromString,
   numeroBarcos: numberFromString,
   numeroTanques: numberFromString,
