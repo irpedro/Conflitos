@@ -67,27 +67,20 @@ INSERT INTO lider_politico (nome, id_grupo_armado, apoio) VALUES
 ('Abdullah Öcal', '10', 'Curdos na Turquia e Síria');
 
 -- Inserção de Chefes Militares
-INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, id_grupo_armado, numero_divisao) VALUES
-('1', 'Major', 'Hibatullah A.', '1', '1'),
-('2', 'Coronel', 'Hibatullah A.', '1', '1'),
-('3', 'Tenente', 'Hibatullah A.', '1', '1'),
-('4', 'Major', 'Hibatullah A.', '1', '2'),
-('5', 'Tenente', 'Hibatullah A.', '1', '2'),
-('6', 'Capitão', 'Hibatullah A.', '1', '3'),
-('7', 'Coronel', 'Rodrigo Londo', '2', '4'),
-('8', 'Major', 'Rodrigo Londo', '2', '4'),
-('9', 'Capitão', 'Rodrigo Londo', '2', '5'),
-('10', 'Tenente', 'Ismail Haniy.', '3', '6'),
-('11', 'Major', 'Ismail Haniy.', '3', '6'),
-('12', 'Coronel', 'Ismail Haniy.', '3', '6'),
-('13', 'Tenente', 'Ismail Haniy.', '3', '7'),
-('14', 'Major', 'Ismail Haniy.', '3', '7'),
-('15', 'Capitão', 'Hassan Nasral', '4', '8'),
-('16', 'Coronel', 'Hassan Nasral', '4', '8'),
-('17', 'Capitão', 'Hassan Nasral', '4', '9'),
-('18', 'Major', 'Hassan Nasral', '4', '9'),
-('19', 'Tenente', 'Abubakar Shek', '5', '10'),
-('20', 'Coronel', 'Abubakar Shek', '5', '10');
+INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, numero_divisao) VALUES
+('1', 'Major', 'Hibatullah A.', '1'),
+('2', 'Coronel', 'Hibatullah A.', '1'),
+('3', 'Tenente', 'Hibatullah A.', '2'),
+('4', 'Major', 'Rodrigo Londo', '3'),
+('5', 'Coronel', 'Ismail Haniy.', '4'),
+('6', 'Tenente', 'Hassan Nasral', '5'),
+('7', 'Capitão', 'Abubakar Shek', '20'),
+('8', 'Major', 'Arnaldo Oteg', '21'),
+('9', 'Coronel', 'Ayman al-Zaw.', '22'),
+('10', 'Tenente', 'Abu Bakr al-B', '23'),
+('11', 'Major', 'Antonio Garc', '24'),
+('12', 'Capitão', 'Abdullah Öcal', '25'),
+('13', 'Sargento', 'Hibatullah A.', '1');
 
 -- Inserção de Traficantes
 INSERT INTO traficantes (nome) VALUES
