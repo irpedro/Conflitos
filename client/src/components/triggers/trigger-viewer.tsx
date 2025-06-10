@@ -143,18 +143,17 @@ EXECUTE FUNCTION valida_minimo_grupos_conflito();`,
     },
     {
       name: "Sequencialidade de Divisões",
-      description: "Gera automaticamente números sequenciais para divisões dentro de cada grupo armado",
+      description: "Gera automaticamente números sequenciais globais para divisões",
       table: "divisao",
       event: "BEFORE INSERT",
       active: true,
-      code: `CREATE FUNCTION gerar_numero_divisao_sequencial() RETURNS TRIGGER AS $$
+      code: `CREATE OR REPLACE FUNCTION gerar_numero_divisao_sequencial() RETURNS TRIGGER AS $$
 DECLARE 
     proximo_numero INT;
 BEGIN
-    -- Busca o próximo número sequencial para o grupo
+    -- Busca o próximo número sequencial global
     SELECT COALESCE(MAX(numero_divisao), 0) + 1 INTO proximo_numero
-    FROM divisao
-    WHERE id_grupo_armado = NEW.id_grupo_armado;
+    FROM divisao;
     
     -- Atribui o número sequencial
     NEW.numero_divisao = proximo_numero;
