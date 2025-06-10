@@ -66,7 +66,6 @@ export default function EntityForms() {
   });
 
   const [divisionForm, setDivisionForm] = useState({
-    numeroDivisao: "",
     idGrupoArmado: "",
     numeroBarcos: 0,
     numeroTanques: 0,
@@ -101,9 +100,21 @@ export default function EntityForms() {
       toast({ title: "Conflito criado", description: "O conflito foi cadastrado com sucesso." });
     },
     onError: (error: any) => {
+      // Extract detailed error message from backend response
+      let errorMessage = "Ocorreu um erro ao cadastrar o conflito.";
+      
+      if (error.message && error.message.includes('{"error"')) {
+        try {
+          const errorData = JSON.parse(error.message.split(': ')[1]);
+          errorMessage = errorData.details || errorData.error || errorMessage;
+        } catch (e) {
+          // Fallback to default message if parsing fails
+        }
+      }
+      
       toast({
         title: "Erro ao criar conflito",
-        description: error.details || "Ocorreu um erro ao cadastrar o conflito.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -118,9 +129,20 @@ export default function EntityForms() {
       toast({ title: "Grupo criado", description: "O grupo armado foi cadastrado com sucesso." });
     },
     onError: (error: any) => {
+      let errorMessage = "Ocorreu um erro ao cadastrar o grupo armado.";
+      
+      if (error.message && error.message.includes('{"error"')) {
+        try {
+          const errorData = JSON.parse(error.message.split(': ')[1]);
+          errorMessage = errorData.details || errorData.error || errorMessage;
+        } catch (e) {
+          // Fallback to default message if parsing fails
+        }
+      }
+      
       toast({
         title: "Erro ao criar grupo",
-        description: error.details || "Ocorreu um erro ao cadastrar o grupo armado.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -150,9 +172,20 @@ export default function EntityForms() {
       toast({ title: "Chefe criado", description: "O chefe militar foi cadastrado com sucesso." });
     },
     onError: (error: any) => {
+      let errorMessage = "Ocorreu um erro ao cadastrar o chefe militar.";
+      
+      if (error.message && error.message.includes('{"error"')) {
+        try {
+          const errorData = JSON.parse(error.message.split(': ')[1]);
+          errorMessage = errorData.details || errorData.error || errorMessage;
+        } catch (e) {
+          // Fallback to default message if parsing fails
+        }
+      }
+      
       toast({
         title: "Erro ao criar chefe",
-        description: error.details || "Ocorreu um erro ao cadastrar o chefe militar.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -162,13 +195,24 @@ export default function EntityForms() {
     mutationFn: api.createDivision,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/divisions"] });
-      setDivisionForm({ numeroDivisao: "", idGrupoArmado: "", numeroBarcos: 0, numeroTanques: 0, numeroAvioes: 0, numeroHomens: 0, numeroBaixas: 0 });
+      setDivisionForm({ idGrupoArmado: "", numeroBarcos: 0, numeroTanques: 0, numeroAvioes: 0, numeroHomens: 0, numeroBaixas: 0 });
       toast({ title: "Divisão criada", description: "A divisão foi cadastrada com sucesso." });
     },
     onError: (error: any) => {
+      let errorMessage = "Ocorreu um erro ao cadastrar a divisão.";
+      
+      if (error.message && error.message.includes('{"error"')) {
+        try {
+          const errorData = JSON.parse(error.message.split(': ')[1]);
+          errorMessage = errorData.details || errorData.error || errorMessage;
+        } catch (e) {
+          // Fallback to default message if parsing fails
+        }
+      }
+      
       toast({
         title: "Erro ao criar divisão",
-        description: error.details || "Ocorreu um erro ao cadastrar a divisão.",
+        description: errorMessage,
         variant: "destructive"
       });
     }
@@ -249,12 +293,9 @@ export default function EntityForms() {
 
   const handleSubmitChief = (e: React.FormEvent) => {
     e.preventDefault();
-    // Find the selected leader to get the group ID
-    const selectedLeader = politicalLeaders?.find(leader => leader.nome === chiefForm.nomeLiderPolitico);
     const formData = {
       ...chiefForm,
       id: parseInt(chiefForm.id),
-      idGrupoArmado: selectedLeader?.idGrupoArmado || 0,
       numeroDivisao: parseInt(chiefForm.numeroDivisao)
     };
     createChiefMutation.mutate(formData);
@@ -263,10 +304,14 @@ export default function EntityForms() {
   const handleSubmitDivision = (e: React.FormEvent) => {
     e.preventDefault();
     const formData = {
-      ...divisionForm,
-      numeroDivisao: parseInt(divisionForm.numeroDivisao),
-      idGrupoArmado: parseInt(divisionForm.idGrupoArmado)
+      idGrupoArmado: parseInt(divisionForm.idGrupoArmado),
+      numeroBarcos: divisionForm.numeroBarcos,
+      numeroTanques: divisionForm.numeroTanques,
+      numeroAvioes: divisionForm.numeroAvioes,
+      numeroHomens: divisionForm.numeroHomens,
+      numeroBaixas: divisionForm.numeroBaixas
     };
+    
     createDivisionMutation.mutate(formData);
   };
 
@@ -556,20 +601,10 @@ export default function EntityForms() {
               <Layers className="w-5 h-5 mr-2 text-orange-600" />
               Cadastrar Divisão
             </CardTitle>
-            <p className="text-sm text-slate-500">Adicione uma nova divisão ao grupo armado</p>
+            <p className="text-sm text-slate-500">Adicione uma nova divisão ao grupo armado (numeração automática)</p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitDivision} className="space-y-4">
-              <div>
-                <Label htmlFor="division-number">Número da Divisão</Label>
-                <Input
-                  id="division-number"
-                  value={divisionForm.numeroDivisao}
-                  onChange={(e) => setDivisionForm(prev => ({ ...prev, numeroDivisao: e.target.value }))}
-                  placeholder="Ex: 101A"
-                  maxLength={5}
-                />
-              </div>
               <div>
                 <Label htmlFor="division-group">Grupo Armado</Label>
                 <Select value={divisionForm.idGrupoArmado} onValueChange={(value) => setDivisionForm(prev => ({ ...prev, idGrupoArmado: value }))}>
