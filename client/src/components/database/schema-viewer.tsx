@@ -50,9 +50,7 @@ export default function SchemaViewer() {
 
   // SQL Scripts for table creation and data insertion
   const sqlScripts = {
-    createTables: `-- Criação das tabelas do sistema de conflitos armados
-
-CREATE TABLE conflito( 
+    createTables: `CREATE TABLE conflito( 
     id INT NOT NULL,
     total_mortos INT NOT NULL,
     total_feridos INT NOT NULL,
@@ -166,8 +164,8 @@ CREATE TABLE paises_em_conflito(
 CREATE TABLE participacao_grupo_armado( 
     id_conflito INT NOT NULL,
     id_grupo_armado INT NOT NULL,
-    data_entrada DATE NOT NULL,
-    data_saida DATE NOT NULL,
+    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
+    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
 
     PRIMARY KEY(id_conflito, id_grupo_armado),
 
@@ -178,8 +176,8 @@ CREATE TABLE participacao_grupo_armado(
 CREATE TABLE participacao_org_mediadora( 
     id_conflito INT NOT NULL,
     id_org_mediadora INT NOT NULL,
-    data_entrada DATE NOT NULL,
-    data_saida DATE NOT NULL,
+    data_entrada DATE NOT NULL,  -- Changed from VARCHAR(10) to DATE
+    data_saida DATE NOT NULL,    -- Changed from VARCHAR(10) to DATE
 
     PRIMARY KEY(id_conflito, id_org_mediadora),
 
@@ -231,257 +229,232 @@ CREATE TABLE contrabandeia(
 
     FOREIGN KEY(nome_arma) REFERENCES armas(nome),
     FOREIGN KEY(nome_traficante) REFERENCES traficantes(nome)
-);
+);`,
 
--- Triggers e Restrições
-CREATE FUNCTION limita_chefe_por_divisao() RETURNS trigger AS $$
-BEGIN
-    IF(SELECT COUNT(*) FROM chefe_militar WHERE numero_divisao = NEW.numero_divisao) >= 3
-        THEN RAISE EXCEPTION 'A divisão escolhida já tem o máximo de 3 chefes';
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_limite_chefe_div
-BEFORE INSERT ON chefe_militar
-FOR EACH ROW
-EXECUTE FUNCTION limita_chefe_por_divisao();
-
-CREATE FUNCTION teste_hierarquia() RETURNS trigger AS $$
-DECLARE contador INTEGER := 0;
-
-BEGIN
-    SELECT
-        (SELECT COUNT(*) FROM religiao WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM territorio WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM economia WHERE id_conflito = NEW.id) +
-        (SELECT COUNT(*) FROM raca WHERE id_conflito = NEW.id)
-    INTO contador;
-
-    IF contador != 1 
-        THEN RAISE EXCEPTION 'Conflito % deve estar em exatamente uma subclasse. Atualmente está em %.', NEW.id, contador;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_hierarquia
-AFTER INSERT OR UPDATE ON conflito
-FOR EACH ROW
-EXECUTE FUNCTION teste_hierarquia();
-
-CREATE OR REPLACE FUNCTION atualizar_total_baixas_grupo() RETURNS TRIGGER AS $$
-
-DECLARE total INT;
-
-BEGIN
-    SELECT SUM(numero_baixas) INTO total
-    FROM divisao
-    WHERE id_grupo_armado = NEW.id_grupo_armado;
-
-    UPDATE grupo_armado
-    SET numero_baixas = COALESCE(total, 0)
-    WHERE id = NEW.id_grupo_armado;
-
-    RETURN NULL;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trg_atualizar_baixas
-AFTER INSERT OR UPDATE OR DELETE ON divisao
-FOR EACH ROW
-EXECUTE FUNCTION atualizar_total_baixas_grupo();
-
--- Restrição: Mínimo 2 grupos por conflito
-CREATE FUNCTION valida_minimo_grupos_conflito() RETURNS TRIGGER AS $$
-DECLARE 
-    total_grupos INT;
-BEGIN
-    -- Conta quantos grupos participam do conflito
-    SELECT COUNT(*) INTO total_grupos
-    FROM participacao_grupo_armado
-    WHERE id_conflito = COALESCE(NEW.id_conflito, OLD.id_conflito);
-    
-    -- Se for menos que 2 grupos, impede a operação
-    IF total_grupos < 2 THEN
-        RAISE EXCEPTION 'Um conflito deve ter pelo menos 2 grupos armados participando. Atual: %', total_grupos;
-    END IF;
-    
-    RETURN COALESCE(NEW, OLD);
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_minimo_grupos
-AFTER INSERT OR DELETE ON participacao_grupo_armado
-FOR EACH ROW
-EXECUTE FUNCTION valida_minimo_grupos_conflito();
-
--- Restrição: Sequencialidade de divisões
-CREATE FUNCTION gerar_numero_divisao_sequencial() RETURNS TRIGGER AS $$
-DECLARE 
-    proximo_numero INT;
-BEGIN
-    -- Busca o próximo número sequencial para o grupo
-    SELECT COALESCE(MAX(numero_divisao), 0) + 1 INTO proximo_numero
-    FROM divisao
-    WHERE id_grupo_armado = NEW.id_grupo_armado;
-    
-    -- Atribui o número sequencial
-    NEW.numero_divisao = proximo_numero;
-    
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_sequencia_divisao
-BEFORE INSERT ON divisao
-FOR EACH ROW
-EXECUTE FUNCTION gerar_numero_divisao_sequencial();`,
-
-    insertData: `-- Inserção de dados nas tabelas
-
--- Inserindo conflitos
+    insertData: `-- Inserção de Conflitos
 INSERT INTO conflito (id, total_mortos, total_feridos, causa, lugar, nome) VALUES
-(1, 800000, 2000000, 'étnica', 'Ruanda', 'Genocídio em Ruanda'),
-(2, 387000, 1500000, 'política', 'Síria', 'Guerra Civil Síria'),
-(3, 25000, 75000, 'territorial', 'Israel/Palestina', 'Conflito Israel-Palestina'),
-(4, 176000, 300000, 'terrorismo', 'Afeganistão', 'Guerra do Afeganistão'),
-(5, 377000, 800000, 'sectária', 'Iêmen', 'Guerra Civil do Iêmen');
+(1, 65000, 90000, 'religioso', 'Iraque', 'Guerra sectária em Bagdá'),
+(2, 78000, 105000, 'territoria', 'Sudão', 'Conflito de fronteiras em Darfur'),
+(3, 41000, 72000, 'econômico', 'Nigéria', 'Disputa por petróleo no Delta Níger'),
+(4, 88000, 130000, 'racial', 'Ruanda', 'Genocídio entre hutus e tutsis'),
+(5, 50000, 65000, 'territoria', 'Israel', 'Conflito na Faixa de Gaza'),
+(6, 47000, 60000, 'religioso', 'Síria', 'Guerra em Homs entre seitas rivais'),
+(7, 54000, 67000, 'econômico', 'Venezuela', 'Crise humanitária por recursos'),
+(8, 60000, 80000, 'racial', 'Myanmar', 'Expulsão dos rohingyas'),
+(9, 70000, 90000, 'territoria', 'Ucrânia', 'Conflito armado na região de Donbas'),
+(10, 55000, 75000, 'religioso', 'Índia', 'Conflito entre hindus e muçulmanos');
 
--- Inserindo grupos armados
+-- Inserção de Grupos Armados
 INSERT INTO grupo_armado (id, nome, numero_baixas) VALUES
-(1, 'Frente Patriótica Ruandesa', 15000),
-(2, 'Estado Islâmico', 45000),
-(3, 'Hamas', 8000),
-(4, 'Taliban', 52000),
-(5, 'Houthis', 12000);
+(1, 'Taliban', 32000),
+(2, 'FARC', 18000),
+(3, 'Hamas', 12000),
+(4, 'Hezbollah', 15000),
+(5, 'Boko Haram', 29000),
+(6, 'ETA', 1100),
+(7, 'Al Qaeda', 25000),
+(8, 'ISIS', 34000),
+(9, 'ELN', 9000),
+(10, 'PKK', 27000);
 
--- Inserindo divisões
+-- Inserção de Divisões
 INSERT INTO divisao (numero_divisao, id_grupo_armado, numero_barcos, numero_tanques, numero_avioes, numero_homens, numero_baixas) VALUES
-(1, 1, 0, 15, 3, 5000, 2000),
-(2, 1, 0, 8, 1, 3500, 1500),
-(3, 2, 0, 25, 0, 8000, 15000),
-(4, 3, 2, 0, 0, 30000, 6000),
-(5, 4, 0, 12, 5, 60000, 35000),
-(6, 5, 3, 8, 0, 15000, 8000);
+(1, 1, 5, 12, 3, 2500, 850),
+(2, 1, 2, 8, 1, 1800, 600),
+(3, 2, 8, 15, 4, 3200, 1200),
+(4, 3, 3, 6, 2, 1500, 400),
+(5, 4, 6, 10, 5, 2800, 950),
+(6, 5, 4, 18, 6, 4500, 1800),
+(7, 6, 1, 2, 0, 800, 150),
+(8, 7, 7, 20, 8, 5000, 2200),
+(9, 8, 9, 25, 12, 6000, 2800),
+(10, 9, 3, 7, 2, 1200, 350);
 
--- Inserindo organizações mediadoras
+-- Inserção de Organizações Mediadoras
 INSERT INTO org_mediadora (id, nome, tipo_org, org_superior, numero_pessoas_sustentadas, tipo_ajuda) VALUES
-(1, 'ONU', 'Internacional', NULL, 1000000, 'Humanitária'),
-(2, 'União Africana', 'Regional', 1, 500000, 'Mediação'),
-(3, 'Liga Árabe', 'Regional', 1, 300000, 'Diplomática'),
-(4, 'Cruz Vermelha', 'Humanitária', NULL, 2000000, 'Médica'),
-(5, 'MSF', 'Humanitária', 4, 800000, 'Médica');
+(1, 'ONU', 'internacio', NULL, 3000, 'diplomátic'),
+(2, 'Cruz Verme', 'internacio', NULL, 2500, 'médica'),
+(3, 'OTAN', 'internacio', 1, 1500, 'presencial'),
+(4, 'Médicos SF', 'não gov.', NULL, 1200, 'médica'),
+(5, 'OEA', 'internacio', 1, 1100, 'diplomátic'),
+(6, 'UNICEF', 'internacio', 1, 800, 'médica'),
+(7, 'Comitê Nor', 'não gov.', NULL, 500, 'diplomátic'),
+(8, 'UE', 'governamen', NULL, 1000, 'presencial'),
+(9, 'Amnistia I', 'não gov.', NULL, 650, 'diplomátic'),
+(10, 'OMS', 'internacio', 1, 2000, 'médica');
 
--- Inserindo líderes políticos
+-- Inserção de Líderes Políticos
 INSERT INTO lider_politico (nome, id_grupo_armado, apoio) VALUES
-('Paul Kagame', 1, 'Uganda e comunidade internacional'),
-('Abu Bakr al-Baghdadi', 2, 'Extremistas islâmicos'),
-('Ismail Haniyeh', 3, 'Irã e Palestinos'),
-('Mullah Omar', 4, 'Tribos pashtuns'),
-('Abdul-Malik al-Houthi', 5, 'Irã e xiitas');
+('Hibatullah A.', 1, 'Apoio tribal e religioso'),
+('Rodrigo Londo', 2, 'Acordos regionais e populares'),
+('Ismail Haniy.', 3, 'Apoio do Hamas e de aliados'),
+('Hassan Nasral', 4, 'Apoio iraniano e político'),
+('Abubakar Shek', 5, 'Grupos extremistas locais'),
+('Arnaldo Oteg', 6, 'Base nacionalista basca'),
+('Ayman al-Zaw.', 7, 'Apoio jihadista internacional'),
+('Abu Bakr al-B', 8, 'Redes extremistas no Iraque'),
+('Antonio Garc', 9, 'Campesinato colombiano'),
+('Abdullah Öcal', 10, 'Curdos na Turquia e Síria');
 
--- Inserindo traficantes
+
+-- Inserção de Traficantes
 INSERT INTO traficantes (nome) VALUES
-('Viktor Bout'),
-('Monzer al-Kassar'),
-('Sarkis Soghanalian'),
-('Adnan Khashoggi'),
-('Tamir Pardo');
+('Carlos Fuentes'),
+('Yuri Ivanov'),
+('Abdul Rashid'),
+('Diego Ramirez'),
+('Viktor Bolkov'),
+('Chen Wei'),
+('Ahmed Hassan'),
+('Marco Silva'),
+('Ivan Petrov'),
+('Tony Martinez');
 
--- Inserindo armas
+-- Inserção de Armas
 INSERT INTO armas (nome, capacidade_destrutiva) VALUES
-('AK-47', 7),
-('RPG-7', 8),
-('M16A4', 7),
-('Katyusha', 9),
-('Qassam', 6);
+('Barret M82', 95),
+('M200 Inter.', 93),
+('AK-47', 75),
+('M16', 70),
+('G36', 68),
+('SCAR-H', 80),
+('FN FAL', 72),
+('Galil ACE', 74),
+('Dragunov SVD', 85),
+('M4A1', 69),
+('RPG-7', 90),
+('Stinger', 91),
+('Uzi', 60),
+('MP5', 63),
+('HK416', 67);
 
--- Inserindo chefes militares
-INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, numero_divisao) VALUES
-(1, 'General', 'Paul Kagame', 1),
-(2, 'Coronel', 'Paul Kagame', 2),
-(3, 'Emir', 'Abu Bakr al-Baghdadi', 3),
-(4, 'Comandante', 'Ismail Haniyeh', 4),
-(5, 'Mullah', 'Mullah Omar', 5);
-
--- Inserindo subtipos de conflito (religioso, territorial, econômico, racial)
+-- Inserção de Conflitos Especializados
 INSERT INTO religiao (id_conflito, religiao_afetada) VALUES
-(2, 'Islã'),
-(4, 'Islã'),
-(5, 'Islã');
+(1, 'islâmica'),
+(6, 'cristã'),
+(10, 'hindu');
 
 INSERT INTO territorio (id_conflito, area_afetada) VALUES
-(3, 'Gaza');
+(2, 'fronteira'),
+(5, 'gaza'),
+(9, 'donbas');
 
 INSERT INTO economia (id_conflito, materia_prima_disputada) VALUES
-(5, 'Petróleo');
+(3, 'petróleo'),
+(7, 'ouro');
 
 INSERT INTO raca (id_conflito, etnia_afetada) VALUES
-(1, 'Tutsi');
+(4, 'tutsi'),
+(8, 'rohingya');
 
--- Inserindo países em conflito
+-- Inserção de Países em Conflito
 INSERT INTO paises_em_conflito (id_conflito, pais_envolvido) VALUES
-(1, 'Ruanda'),
-(1, 'França'),
-(2, 'Síria'),
-(2, 'Rússia'),
-(2, 'Estados Unidos'),
-(3, 'Israel'),
-(3, 'Palestina'),
-(4, 'Afeganistão'),
-(4, 'Estados Unidos'),
-(5, 'Iêmen'),
-(5, 'Arábia Saudita');
+(1, 'Iraque'),
+(2, 'Sudão'),
+(3, 'Nigéria'),
+(4, 'Ruanda'),
+(5, 'Israel'),
+(5, 'Palestina'),
+(6, 'Síria'),
+(7, 'Venezuela'),
+(8, 'Myanmar'),
+(9, 'Ucrânia'),
+(9, 'Rússia'),
+(10, 'Índia');
 
--- Inserindo participação de grupos armados
+-- Inserção de Participação de Grupos Armados
 INSERT INTO participacao_grupo_armado (id_conflito, id_grupo_armado, data_entrada, data_saida) VALUES
-(1, 1, '1990-10-01', '1994-07-15'),
-(2, 2, '2013-04-08', '2019-03-23'),
-(3, 3, '1987-12-09', '2024-12-31'),
-(4, 4, '1994-09-27', '2021-08-30'),
-(5, 5, '2014-09-21', '2024-12-31');
+(1, 1, '2020-01-15', '2021-12-30'),
+(2, 5, '2019-03-20', '2020-11-25'),
+(3, 2, '2018-07-12', '2019-09-18'),
+(4, 8, '2017-04-08', '2018-12-20'),
+(5, 3, '2021-01-10', '2022-08-25'),
+(6, 4, '2020-09-12', '2021-11-30'),
+(7, 9, '2019-11-05', '2021-03-20'),
+(8, 7, '2018-12-15', '2020-02-28'),
+(9, 10, '2022-01-20', '2023-06-15'),
+(10, 6, '2021-05-10', '2022-07-10');
 
--- Inserindo participação de organizações mediadoras
+-- Inserção de Participação de Organizações Mediadoras
 INSERT INTO participacao_org_mediadora (id_conflito, id_org_mediadora, data_entrada, data_saida) VALUES
-(1, 1, '1994-04-07', '1994-07-15'),
-(2, 1, '2011-03-15', '2024-12-31'),
-(3, 1, '1948-05-15', '2024-12-31'),
-(4, 1, '2001-10-07', '2021-08-30'),
-(5, 3, '2015-03-26', '2024-12-31');
+(1, 1, '2020-01-15', '2021-06-30'),
+(1, 2, '2020-02-10', '2021-08-15'),
+(2, 1, '2019-03-20', '2020-12-10'),
+(2, 3, '2019-05-15', '2020-11-25'),
+(3, 2, '2018-07-12', '2019-09-18'),
+(4, 1, '2017-04-08', '2018-12-20'),
+(4, 2, '2017-06-15', '2018-10-30'),
+(4, 6, '2017-08-20', '2018-11-15'),
+(5, 1, '2021-01-10', '2022-05-25'),
+(5, 3, '2021-03-15', '2022-07-10'),
+(6, 2, '2020-09-12', '2021-11-30'),
+(7, 1, '2019-11-05', '2021-03-20'),
+(8, 6, '2018-12-15', '2020-02-28'),
+(9, 3, '2022-01-20', '2023-06-15'),
+(10, 1, '2021-05-10', '2022-08-25');
 
--- Inserindo diálogos
+
+-- Inserção de Diálogos
 INSERT INTO dialogo (id_org_mediadora, nome_lider_politico, id_grupo_armado) VALUES
-(1, 'Paul Kagame', 1),
-(1, 'Ismail Haniyeh', 3),
-(3, 'Abdul-Malik al-Houthi', 5);
+(1, 'Hibatullah A.', 1),
+(1, 'Rodrigo Londo', 2),
+(2, 'Ismail Haniy.', 3),
+(3, 'Hassan Nasral', 4),
+(1, 'Abubakar Shek', 5);
 
--- Inserindo liderança
+-- Inserção de Liderança
 INSERT INTO lideranca (id_grupo_armado, nome_lider_politico) VALUES
-(1, 'Paul Kagame'),
-(2, 'Abu Bakr al-Baghdadi'),
-(3, 'Ismail Haniyeh'),
-(4, 'Mullah Omar'),
-(5, 'Abdul-Malik al-Houthi');
+(1, 'Hibatullah A.'),
+(2, 'Rodrigo Londo'),
+(3, 'Ismail Haniy.'),
+(4, 'Hassan Nasral'),
+(5, 'Abubakar Shek'),
+(6, 'Arnaldo Oteg'),
+(7, 'Ayman al-Zaw.'),
+(8, 'Abu Bakr al-B'),
+(9, 'Antonio Garc'),
+(10, 'Abdullah Öcal');
 
--- Inserindo fornecimento de armas
+INSERT INTO chefe_militar (id, faixa_hierarquica, nome_lider_politico, numero_divisao) VALUES
+(1, 'Major', 'Hibatullah A.', 1),
+(2, 'Coronel', 'Hibatullah A.', 1),
+(3, 'Tenente', 'Hibatullah A.', 2),
+(4, 'Major', 'Rodrigo Londo', 3),
+(5, 'Coronel', 'Ismail Haniy.', 4),
+(6, 'Tenente', 'Hassan Nasral', 5),
+(7, 'Capitão', 'Abubakar Shek', 20),
+(8, 'Major', 'Arnaldo Oteg', 21),
+(9, 'Coronel', 'Ayman al-Zaw.', 22),
+(10, 'Tenente', 'Abu Bakr al-B', 23),
+(11, 'Major', 'Antonio Garc', 24),
+(12, 'Capitão', 'Abdullah Öcal', 25),
+(13, 'Sargento', 'Hibatullah A.', 1);
+
+-- Inserção de Fornecimento de Armas
 INSERT INTO fornecimento (id_grupo_armado, nome_traficante, nome_arma, quantidade_fornecida) VALUES
-(1, 'Viktor Bout', 'AK-47', 5000),
-(2, 'Monzer al-Kassar', 'AK-47', 10000),
-(3, 'Sarkis Soghanalian', 'RPG-7', 500),
-(4, 'Adnan Khashoggi', 'M16A4', 3000),
-(5, 'Viktor Bout', 'Katyusha', 200);
+(1, 'Carlos Fuentes', 'AK-47', 150),
+(1, 'Yuri Ivanov', 'RPG-7', 25),
+(2, 'Abdul Rashid', 'M16', 80),
+(3, 'Diego Ramirez', 'Barret M82', 10),
+(4, 'Viktor Bolkov', 'SCAR-H', 60),
+(5, 'Carlos Fuentes', 'M200 Inter.', 15),
+(6, 'Chen Wei', 'Uzi', 45),
+(7, 'Ahmed Hassan', 'Dragunov SVD', 30),
+(8, 'Marco Silva', 'HK416', 95),
+(9, 'Ivan Petrov', 'FN FAL', 70);
 
--- Inserindo contrabando
+-- Inserção de Contrabando
 INSERT INTO contrabandeia (nome_traficante, nome_arma, quantidade_possuida) VALUES
-('Viktor Bout', 'AK-47', 50000),
-('Monzer al-Kassar', 'RPG-7', 2000),
-('Sarkis Soghanalian', 'M16A4', 15000),
-('Adnan Khashoggi', 'Katyusha', 800),
-('Tamir Pardo', 'Qassam', 1200);`
+('Carlos Fuentes', 'AK-47', 500),
+('Carlos Fuentes', 'M200 Inter.', 50),
+('Yuri Ivanov', 'RPG-7', 120),
+('Abdul Rashid', 'M16', 300),
+('Diego Ramirez', 'Barret M82', 75),
+('Viktor Bolkov', 'SCAR-H', 200),
+('Chen Wei', 'Uzi', 180),
+('Ahmed Hassan', 'Dragunov SVD', 90),
+('Marco Silva', 'HK416', 250),
+('Ivan Petrov', 'FN FAL', 160);`
   };
 
   // Available tables organized by category
