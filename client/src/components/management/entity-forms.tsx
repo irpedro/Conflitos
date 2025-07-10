@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, Users, Shield, Crown, Star, Loader2, Layers } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
+
 // Define tipos locais para resolver problemas de importação
 type GrupoArmado = {
   id: number;
@@ -228,46 +229,31 @@ export default function EntityForms() {
         id: parseInt(conflictForm.id)
       };
       
-      // Temporarily disable trigger to insert conflict
+      // Determine the subclass insert query
+      let subclassQuery = '';
+      if (conflictData.causa === 'religioso') {
+        subclassQuery = `INSERT INTO religiao (id_conflito, religiao_afetada) VALUES (${conflictData.id}, 'Geral');`;
+      } else if (conflictData.causa === 'territorial') {
+        subclassQuery = `INSERT INTO territorio (id_conflito, area_afetada) VALUES (${conflictData.id}, 'Geral');`;
+      } else if (conflictData.causa === 'economico') {
+        subclassQuery = `INSERT INTO economia (id_conflito, recurso_disputado) VALUES (${conflictData.id}, 'Geral');`;
+      } else {
+        subclassQuery = `INSERT INTO raca (id_conflito, etnia_afetada) VALUES (${conflictData.id}, 'Geral');`;
+      }
+      
+      // Execute the SQL with temporary trigger disable
       await fetch('/api/execute-sql', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: `
-            -- Disable trigger temporarily
             ALTER TABLE conflito DISABLE TRIGGER ALL;
             
-            -- Insert conflict
             INSERT INTO conflito (id, nome, lugar, causa, total_mortos, total_feridos)
             VALUES (${conflictData.id}, '${conflictData.nome}', '${conflictData.lugar}', '${conflictData.causa}', ${conflictData.totalMortos}, ${conflictData.totalFeridos});
             
-           // Determine the subclass insert query
-            let subclassQuery = '';
-            if (conflictData.causa === 'religioso') {
-              subclassQuery = `INSERT INTO religiao (id_conflito, religiao_afetada) VALUES (${conflictData.id}, 'Geral');`;
-            } else if (conflictData.causa === 'territorial') {
-              subclassQuery = `INSERT INTO territorio (id_conflito, area_afetada) VALUES (${conflictData.id}, 'Geral');`;
-            } else if (conflictData.causa === 'economico') {
-              subclassQuery = `INSERT INTO economia (id_conflito, recurso_disputado) VALUES (${conflictData.id}, 'Geral');`;
-            } else {
-              subclassQuery = `INSERT INTO raca (id_conflito, etnia_afetada) VALUES (${conflictData.id}, 'Geral');`;
-            }
+            ${subclassQuery}
             
-            // Then use it in the main query
-            body: JSON.stringify({
-              query: `
-                ALTER TABLE conflito DISABLE TRIGGER ALL;
-                
-                INSERT INTO conflito (id, nome, lugar, causa, total_mortos, total_feridos)
-                VALUES (${conflictData.id}, '${conflictData.nome}', '${conflictData.lugar}', '${conflictData.causa}', ${conflictData.totalMortos}, ${conflictData.totalFeridos});
-                
-                ${subclassQuery}
-                
-                ALTER TABLE conflito ENABLE TRIGGER ALL;
-              `
-            })
-            
-            -- Re-enable trigger
             ALTER TABLE conflito ENABLE TRIGGER ALL;
           `
         })
