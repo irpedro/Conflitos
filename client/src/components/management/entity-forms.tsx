@@ -241,15 +241,31 @@ export default function EntityForms() {
             INSERT INTO conflito (id, nome, lugar, causa, total_mortos, total_feridos)
             VALUES (${conflictData.id}, '${conflictData.nome}', '${conflictData.lugar}', '${conflictData.causa}', ${conflictData.totalMortos}, ${conflictData.totalFeridos});
             
-            -- Insert into appropriate subclass based on causa
-            ${conflictData.causa === 'religioso' ? 
-              `INSERT INTO religiao (id_conflito, religiao_afetada) VALUES (${conflictData.id}, 'Geral');` :
-            conflictData.causa === 'territorial' ?
-              `INSERT INTO territorio (id_conflito, area_afetada) VALUES (${conflictData.id}, 'Geral');` :
-            conflictData.causa === 'economico' ?
-              `INSERT INTO economia (id_conflito, recurso_disputado) VALUES (${conflictData.id}, 'Geral');` :
-              `INSERT INTO raca (id_conflito, etnia_afetada) VALUES (${conflictData.id}, 'Geral');`
+           // Determine the subclass insert query
+            let subclassQuery = '';
+            if (conflictData.causa === 'religioso') {
+              subclassQuery = `INSERT INTO religiao (id_conflito, religiao_afetada) VALUES (${conflictData.id}, 'Geral');`;
+            } else if (conflictData.causa === 'territorial') {
+              subclassQuery = `INSERT INTO territorio (id_conflito, area_afetada) VALUES (${conflictData.id}, 'Geral');`;
+            } else if (conflictData.causa === 'economico') {
+              subclassQuery = `INSERT INTO economia (id_conflito, recurso_disputado) VALUES (${conflictData.id}, 'Geral');`;
+            } else {
+              subclassQuery = `INSERT INTO raca (id_conflito, etnia_afetada) VALUES (${conflictData.id}, 'Geral');`;
             }
+            
+            // Then use it in the main query
+            body: JSON.stringify({
+              query: `
+                ALTER TABLE conflito DISABLE TRIGGER ALL;
+                
+                INSERT INTO conflito (id, nome, lugar, causa, total_mortos, total_feridos)
+                VALUES (${conflictData.id}, '${conflictData.nome}', '${conflictData.lugar}', '${conflictData.causa}', ${conflictData.totalMortos}, ${conflictData.totalFeridos});
+                
+                ${subclassQuery}
+                
+                ALTER TABLE conflito ENABLE TRIGGER ALL;
+              `
+            })
             
             -- Re-enable trigger
             ALTER TABLE conflito ENABLE TRIGGER ALL;
