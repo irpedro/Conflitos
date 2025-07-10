@@ -5,7 +5,7 @@ Sistema acadêmico (Banco de Dados 2) especializado em análise de conflitos arm
 ## Deploy na Nuvem
 
 ### Railway
-1. Acesseo site do projeto no [railway.app](https://conflict-analysis-app-production.up.railway.app/)
+1. Acesse o site do projeto no [railway.app](https://conflict-analysis-app-production.up.railway.app/)
 
 ## Configuração do Banco
 
